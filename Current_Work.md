@@ -126,3 +126,19 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
 - Interpretation (inference, not yet verified): it maps a 16-bit ID to one of 8 RAM slots.
   Only the mask change at C5:C72E and C5:C757 widens the input to 16 bits.
 - Still unknown: where A comes from before the AND at C5:C72E (caller code above C5:C700).
+
+## Callers of $85:C72B (the block containing the mask change) - verified from bytes
+- 62 JSL $85:C72B sites in the original ROM (C0, C2, C3, C6, C8 banks).
+  The mask at C5:C72E sits on the path every one of these calls takes.
+- 59 of 62 sites load A with LDA #imm16 (A9 lo hi) directly before the JSL. All 59 immediates
+  are below $0100, so AND #$00FF and AND #$FFFF give the same result there.
+  (Assumes 16-bit A at those sites; the 3-byte form implies this but it is inferred.)
+- 3 sites take A from data, not a constant:
+  * C0:C149  A = LDA $1C3F (RAM)
+  * C2:9D79  A = LDA long $88:9D23,X or $88:9E19,X (ROM table)
+  * C2:A114  A = LDA long $88:9DC9,X (ROM table)
+  Read as 16-bit words, these tables contain values with nonzero high bytes
+  (e.g. $0x1510, $0xAEAD, $0x8989). So the mask change could matter at these sites.
+  Unverified: M flag at these sites (8-bit A would read only one byte), and what the
+  table values mean.
+- Inference (not verified): the Deluxe mask change targets these data-driven callers.
