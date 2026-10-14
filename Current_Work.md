@@ -306,3 +306,39 @@ Phase 6: Milestone M4, custom specials  [size XL]
   static reading plus RAM diffing.
 - The emulator test result is the only proof of any milestone. Do not claim a milestone
   without an emulator test.
+
+## Agent results (verified by me against the ROM bytes)
+
+### Deluxe diff agent (tools/deluxe_diff.py, scratchpad/agents/deluxe_diff/)
+- WRONG claim in its report: "name table NOT unchanged". The 25-entry name POINTER table
+  (0x3E544-0x3E575) is identical. The one byte at 0x3E5CA that differs is an immediate in code:
+  orig  LDA #$000B ; STA $3A7E   ->   Deluxe LDA #$001E ; STA $3A7E.
+  $3A7E is the screen-mode variable (0B = Versus Screen in the Data Crystal RAM map).
+  So Deluxe sets screen mode $1E there. $1E is not in the known list. Meaning unverified.
+- WRONG classification: range 0x105E1A (D0:5E1A), 3567 bytes, was labelled "pointer-like".
+  It decodes as NEW CODE in Deluxe (LDA #5 / STA $36 / JSL $88:C637 ... loop with DEC $36 / BPL).
+  3527 of those 3567 bytes differ from the original, which held other data there. One caller
+  found in Deluxe: JSL/JML to D0:5E1A at file 0x4A194.
+- Deluxe header: map byte 0x35 (ExHiROM), size byte 0x0D (8 MB). The same title bytes appear at
+  both 0x00FFC0 and 0x40FFC0 (the ROM is the original 4 MB data duplicated or extended).
+  The agent's attempts to infer bank deltas for the upper 4 MB failed (its long_refs.tsv is unverified).
+- Ranges: 193 at gap<=64 (earlier I counted about 124 at gap<=256). Credits text at C3:BBD9,
+  strings "HIDDEN CHARS" (C3:D515), "3 ON 3" (C3:DFDE), "HIDDEN PORTAL" (C5:EBF3).
+
+### ID-table scan agent (tools/scan_id_tables.py, scratchpad/agents/id_tables/report.txt)
+- Its candidate list is noisy (5403 candidates). I checked the top 25-entry word/long tables myself.
+- VERIFIED: Deluxe changed NONE of these tables (0 differing bytes in table plus 4 extra entries):
+  0x3E544 (name), 0x0986C, 0x0D1F7, 0x1C5A6, 0x2A242, 0x2A5A6, 0x2C071, 0x2EC7B, sparse 0x68E15.
+  So Deluxe enabled its extra fighter without editing these tables.
+- VERIFIED: in these tables ID 11 has a distinct non-null entry that fits its neighbours:
+    C0:986C  words  ... 98FA(ID10) 9904(ID11) 990E(ID12): regular +0x0A steps, so ID 11 is a real entry.
+    C1:C5A6  ID11 = C61F (unique)       C2:A5A6  ID11 = A699 (regular +0x10 steps)
+    C2:EC7B  all 25 distinct, ID11 = F01C       C2:A242 ID11 = FFA1 (unique value)
+  The name table is the only one with a null at ID 11.
+- Inference (not verified): ID 11 is an unused fighter slot (likely Sheeva, matching the Cutting
+  Room Floor note about unused Sheeva data in the ROM) with data already present in per-fighter
+  tables but no name pointer. Test later in the emulator by reading fighter-ID RAM while Sheeva
+  is selected in Deluxe.
+- Consequence for the plan: reuse ID 11 for Batman (replace the unused slot's data) instead of
+  adding ID 25. Adding ID 25 would require extending every ID-indexed table and none of the
+  tables above has room (many are packed against other data).
