@@ -454,3 +454,18 @@ It has now been done: tools/dump_br_sprites.py renders the tile pieces from Batm
 sprite palette (WRAM 0x3300). The output shows the cowl and chest with the yellow emblem, torso with the
 orange belt, arm, leg and cape pieces, and effect graphics (batarang, explosion, smoke). These are the pieces
 for the idle pose. Full frames still need the sprite attribute table.
+
+## UMK3 fighter art is stored compressed (verified test)
+- Method: ran UMK3 to a Rain vs Reptile fight (tools/umk3_nav.py to_fight(0,0)), dumped VRAM, and searched
+  the 4 MB ROM for each non-trivial 4bpp tile (>= 8 distinct byte values).
+- Result: only 19 of 1,069 non-trivial VRAM tiles occur verbatim in the ROM (VRAM 4 KB blocks 3, 12, 14, 15,
+  likely patterned or UI tiles). Half-tile chunks match 43/1067 (first 16 bytes) and 27/848 (last 16 bytes);
+  8-byte chunks 78/988. So fighter sprite data is not stored as plain 4bpp tiles in the ROM. It is compressed
+  (or reordered). This is the real blocker for a true Batman fighter.
+- Consequence: converting Batman Returns frames into UMK3 needs UMK3's decompression algorithm (to write a
+  matching compressor, or a loader hook that uploads raw tiles). Neither is known yet.
+- Next: find the decompressed copy of a fighter's tiles in work RAM (search WRAM for the same VRAM tiles),
+  locate the matching compressed stream in ROM via the per-fighter pointer tables, and test candidate
+  LZ/RLE schemes against the known output. Record each tested scheme and result here.
+- External claim (unverified, from the user): a 900x1650 Batman Returns sheet cut into about 100 poses exists
+  in another sandbox. If uploaded here it would replace the OAM assembly step, but the compression blocker above remains.
