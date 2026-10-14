@@ -142,3 +142,22 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
   Unverified: M flag at these sites (8-bit A would read only one byte), and what the
   table values mean.
 - Inference (not verified): the Deluxe mask change targets these data-driven callers.
+
+## M-flag and table layout check (C2:9D79, C2:A114, C0:C149)
+Verified from bytes:
+- The original code at C5:C72E is 29 FF 00. Under M=0 (16-bit A) this is AND #$00FF.
+  Under M=1 it would decode as AND #$FF followed by BRK. So every valid caller must reach
+  C5:C72E with M=0. This is a constraint from the code itself, not a flow trace.
+- Tables $88:9D23, $88:9DC9 and $88:9E19 read as bytes look like 8-bit entries
+  (e.g. 01 08 10 15 1A 27 ... ; 02 0A 12 17 1C 29 ...; AD AE AF B0 ... with 00 separators).
+  The "high bytes" I reported earlier come from reading the next entry as the high byte in
+  16-bit mode. They are not evidence that the tables hold 16-bit values.
+- C0:C149 is preceded by REP #$A2 (M cleared = 16-bit) at file 0xBF37, nearest REP/SEP touching M.
+  That is a straight-line result, not a verified flow result.
+
+Not resolved (straight-line search is unreliable here):
+- C2:9D79 and C2:A114: nearest M-touching instruction is SEP #$AB at file 0x9AA8 (sets 8-bit).
+  That conflicts with the M=0 constraint above, so either the path has a branch the search
+  does not follow, or the instruction at 0x9AA8 is not on the path. Needs a flow-aware trace.
+- Index step for the tables (how X advances) not yet read.
+- Net: the mask change may still have no effect at any call site. Unresolved.
