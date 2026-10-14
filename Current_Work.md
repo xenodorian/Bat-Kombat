@@ -105,3 +105,13 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
   Location still unknown. Needs a code search of the Deluxe ROM.
 - Author handle "Lucas Dext5r" vs "Lucas Ferreira": same person is claimed by the user's
   source but not verified from any file in this repo.
+
+## Mask change located (verified from bytes)
+- Deluxe v2.3 changes AND #$00FF -> AND #$FFFF at two sites, file offsets 0x5C72E and 0x5C757
+  (SNES C5:C72E and C5:C757). Opcode bytes: original 29 FF 00, Deluxe 29 FF FF.
+- Both sites sit in the same code pattern: LDX $2A; PHX; ... AND #imm; JSL $85CD19; ... PLX.
+  They share the JSL target $85:CD19.
+- Only 2 bytes differ in the surrounding 256-byte block (C5:C700-C5:C7FF) and these two sites
+  are the only AND #$00FF -> #$FFFF changes found in the whole ROM.
+- Purpose of the code (what $2A holds, what $85:CD19 does) is NOT yet verified.
+- Remaining Deluxe changes (~18,800 bytes across the ROM) are still unexplained.
