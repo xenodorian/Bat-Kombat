@@ -161,3 +161,31 @@ Not resolved (straight-line search is unreliable here):
   does not follow, or the instruction at 0x9AA8 is not on the path. Needs a flow-aware trace.
 - Index step for the tables (how X advances) not yet read.
 - Net: the mask change may still have no effect at any call site. Unresolved.
+
+## CORRECTION (supersedes the M-flag notes above)
+- The earlier "SEP #$AB at 0x9AA8" result was WRONG. I passed C2:9D79 as file offset 0x9D79,
+  which is bank C0, not bank C2. The correct file offset for C2:9D79 is 0x29D79.
+  Also, the table reads I cited as $88:9D23 etc. are correct (file 0x89D23 maps to bank $88).
+- Mapping used: bank $C2 maps linearly to file 0x20000 + address (HiROM). $C0 to 0x00000.
+
+## Flow checks, corrected (straight-line and local consistency)
+- Last M-touching REP/SEP before C2:9D79 is REP #$20 at C2:96FB (clears M = 16-bit).
+  No later M-touching REP/SEP before the site. So M=0 along the straight-line path.
+- Last M-touching REP/SEP before C2:A114 is REP #$A0 at C2:A073 (clears M = 16-bit).
+  No later M-touching REP/SEP before the site.
+- Local code agrees: C2:9D61-9D64 uses "bit #$0040" as a 3-byte immediate (89 40 00), and
+  C2:9D5C uses "cpx #$000F" as 3-byte (E0 0F 00). Both only decode correctly with M=0 and X=0.
+- Incoming branches to C2:9D79 come only from C2:9D6D and C2:9D73 (both internal).
+  No incoming branch to C2:A114 (reached by fallthrough or by a call from elsewhere).
+
+## Index progression (C2:9D40-9D7D)
+- X = word from RAM $52C8,y. Then CPX #$000F with BMI:
+  X < 15 (signed): reads $88:9E19,X (table with AD AE AF ...).
+  X >= 15: tests bit $0040 of $5538,y; reads $88:9D23,X or $88:9D3F,X.
+- X is not incremented in this block. The index is the value from $52C8, so each lookup
+  reads a single element chosen by that value.
+- With M=0, LDA long,X reads 2 bytes (table[X] and table[X+1]).
+  So the 16-bit A passed to C5:C72B has low byte = table[X] and high byte = table[X+1].
+  The original AND #$00FF keeps only table[X]. The Deluxe AND #$FFFF keeps both.
+- Inference (not verified): if the tables are byte-indexed, the Deluxe change alters the
+  value at these three sites. Whether that is intended is not verified.
