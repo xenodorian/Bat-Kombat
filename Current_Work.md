@@ -90,3 +90,18 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
   in the uploaded Deluxe file. The change, if it exists, is elsewhere.
 - Screen codes 0B Versus, 0C Title, 0D Character Select, 0F Continue: consistent with the
   RAM map read earlier.
+
+## Verified header facts (file evidence)
+- Original UMK3 (USA): header ROM size byte $FFD7 = 0x0C (2^12 KB = 4 MB). File size 4,194,304 bytes.
+- UMK3 Deluxe v2.3 upload: header ROM size byte $FFD7 = 0x0D (2^13 KB = 8 MB). File size 8,388,608 bytes.
+  Header title "UMK3 DELUXE", map byte $FFD5 = 0x35 (original 0x31).
+- Internal checksum $FFDE-$FFDF = 0x64E9 and complement $FFDC-$FFDD = 0x9B16 in BOTH ROMs.
+  The Deluxe header checksum was not updated for its changes.
+
+## Unconfirmed (not verified from files)
+- Deluxe "16 MB" claim (user-provided source): not supported by the uploaded file (8 MB).
+  MSU-1 explanation is a guess, not checked.
+- Instruction mask change AND #$00FF -> AND #$FFFF: not found at file offset 0x3E348.
+  Location still unknown. Needs a code search of the Deluxe ROM.
+- Author handle "Lucas Dext5r" vs "Lucas Ferreira": same person is claimed by the user's
+  source but not verified from any file in this repo.
