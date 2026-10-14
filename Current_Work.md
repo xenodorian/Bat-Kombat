@@ -403,3 +403,13 @@ VERIFIED by emulator (original ROM, roster grid, reading WRAM while moving the c
 - Harness now has poke_wram() and run_poking() to emulate Pro Action Replay writes.
 - First poke experiment: writing ID 11 into $52C8/$36D0 every frame while pressing START on the grid
   did not leave the grid (START does not confirm a fighter there). Needs the confirm button.
+
+## Fight navigation script (agent-written, NOT yet verified by me)
+- tools/umk3_nav.py, written by a Haiku agent that was still running when committed.
+- Its docstring claims: boot ~1500 frames; START three times (200 frames apart) reaches the roster grid;
+  on the grid, A (not START) confirms P1; then CHOOSE YOUR DESTINY (tower), A starts the NOVICE climb,
+  START after about 1000 frames leads to the fight. Grid valid cells: row 0 cols 0-6; row 1 cols 0-6
+  except col 3 (logo cell skipped); rows 2 and 3 cols 1-5.
+- Run it and compare against screenshots before relying on it.
+- This explains why my earlier test (pressing START on the grid with ID 11 poked) never left the grid:
+  A confirms, not START.
