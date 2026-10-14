@@ -115,3 +115,14 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
   are the only AND #$00FF -> #$FFFF changes found in the whole ROM.
 - Purpose of the code (what $2A holds, what $85:CD19 does) is NOT yet verified.
 - Remaining Deluxe changes (~18,800 bytes across the ROM) are still unexplained.
+
+## Routine $85:CD19 (verified from bytes, same in original and Deluxe)
+- Entry: A = value to look up (16-bit, since the caller's AND #$FFFF widens it). Stores A to $0A,
+  clears $4E.
+- Compares A against 8 RAM words at $1B40, $1B3E, $1B3C, $1B3A, $1B38, $1B36, $1B34, $1B32.
+  On match, returns A = 0x0E, 0x0C, 0x0A, 0x08, ... with carry clear (matching slot number).
+- If no match: loop (16-bit X, step 2, X < 0x10) looks for an entry with bit 15 set (bmi).
+  On a negative entry it branches to $85:CD8B. Otherwise checks $4E, returns carry set.
+- Interpretation (inference, not yet verified): it maps a 16-bit ID to one of 8 RAM slots.
+  Only the mask change at C5:C72E and C5:C757 widens the input to 16 bits.
+- Still unknown: where A comes from before the AND at C5:C72E (caller code above C5:C700).
