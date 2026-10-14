@@ -374,3 +374,32 @@ Phase 6: Milestone M4, custom specials  [size XL]
 - The Deluxe diff mixes many features (music, endings, menus, stages). Reading Sheeva's selection
   path from the diff alone is slow. Better route: use the emulator to watch RAM while selecting
   characters, and test the hidden-chars option and L+R+Start claim directly.
+
+## TCRF text from the user, and the first RAM verification (dispatch 2)
+User pasted text said to come from The Cutting Room Floor UMK3 (SNES). Provenance not verified (the
+file link it gave is a Google search redirect, and some parts contradict the Deluxe readme).
+Parts I am treating as claims to test:
+- Sheeva was cut but leftover data remains. Access in the unpatched game: hold L+R and press Start
+  "on the title screen" for 8 vs 8 Tournament mode, then Up+Start (random all 8) or A+Start
+  (random current slot); random can hit an "E" icon that is Sheeva's remaining slot.
+  A Haiku agent tried L+R+Start at the title, start menu, play-mode menu and grid on both ROMs and
+  saw nothing special. It did not test random select inside 8 PLAYER TOURNAMENT. Still open.
+- Chameleon via Pro Action Replay: 7E36D019 and 7E52C819 (uses Rain's lifebar name, Scorpion's sprite).
+- Unused stage ids at $7E3A7E: 07 Bell Tower, 08 unknown, 09 Pit III (MK3), 0A Hidden Portal.
+- Doubtful parts of the pasted text (conflict with the readme or my own observation, not used):
+  "Sheeva is on the Deluxe grid", "Shang Tsung morphs into Sheeva with F,D,F,LK".
+
+VERIFIED by emulator (original ROM, roster grid, reading WRAM while moving the cursor):
+- WRAM word $52C8 holds the P1 cursor fighter ID and $36D0 mirrors it. Seen values:
+  top-left cell 0x18 (Rain), then 0x13 (Reptile), 0x05, 0x02, 0x14, 0x0F, 0x07, 0x0A, 0x06.
+  These match the name table order (0 Kano ... 24 Rain).
+- This CORRECTS my earlier guess that $52C8 held state codes. The earlier writes of $0004 and $0010
+  to $52C8,x are fighter IDs (Sub-Zero 4, Jade 16). The routine at C2:9D40 uses the ID as X:
+  ID < 15 reads $88:9E19,X; otherwise reads $88:9D23,X or $88:9D3F,X. The 59-plus callers of
+  C5:C72B pass sound-like values, so per-fighter table[ID] then feeds that routine (probably a
+  per-fighter sound or announcer value; inference).
+- PAR code 7E52C819 sets the P1 fighter ID to 0x19 (25). ID 25 is beyond the 25-entry tables
+  (IDs 0 to 24), so Chameleon likely is a hard-coded alias; the aliases at IDs 21 and 22 are similar.
+- Harness now has poke_wram() and run_poking() to emulate Pro Action Replay writes.
+- First poke experiment: writing ID 11 into $52C8/$36D0 every frame while pressing START on the grid
+  did not leave the grid (START does not confirm a fighter there). Needs the confirm button.

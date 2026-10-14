@@ -104,6 +104,22 @@ class Core:
         ptr, size = L.retro_get_memory_data(kind), L.retro_get_memory_size(kind)
         return bytes((C.c_uint8 * size).from_address(ptr))
 
+    def poke_wram(self, addr, data):
+        """Write bytes into work RAM at WRAM offset addr (like a Pro Action Replay code)."""
+        L = self.lib
+        L.retro_get_memory_data.restype = C.c_void_p
+        L.retro_get_memory_data.argtypes = [C.c_uint]
+        ptr = L.retro_get_memory_data(2)
+        C.memmove(ptr + addr, bytes(data), len(data))
+
+    def run_poking(self, frames, buttons, pokes):
+        """Like run(), but re-applies pokes ({addr: bytes}) before every frame."""
+        self.pressed = {BTN[b] for b in buttons}
+        for _ in range(frames):
+            for a, d in pokes.items():
+                self.poke_wram(a, d)
+            self.lib.retro_run()
+
     def wram(self):
         """128 KB of SNES work RAM ($7E0000-$7FFFFF)."""
         return self._mem(2)
