@@ -342,3 +342,35 @@ Phase 6: Milestone M4, custom specials  [size XL]
 - Consequence for the plan: reuse ID 11 for Batman (replace the unused slot's data) instead of
   adding ID 25. Adding ID 25 would require extending every ID-indexed table and none of the
   tables above has room (many are packed against other data).
+
+## Round 2 findings (dispatch 2)
+
+### Sprite site shortcut closed
+- Haiku agent: spriters-resource.com (all pages) returns HTTP 403 with cf-mitigated: challenge.
+  No Batman Returns sprite sheet reachable. Not bypassed. Art must come from the ROM via emulator
+  memory, or from a copy the user saves from their own browser.
+
+### What Deluxe's code changes appear to be (verified bytes, interpretation marked)
+- Options menu text: original "ENABLE MOTARO" (0x3D519) is replaced by "HIDDEN CHARS " in Deluxe.
+  Data Crystal says $7E3BB0 is the Motaro enable option, so Deluxe repurposed that option as a
+  hidden-characters switch (inference from the text swap, not yet seen working).
+- Hook at C3:D405: original LDA #$0018 ; STA $3A7E ; Deluxe JML $CE:98C4 + NOPs. The target
+  code repeats the LDA/STA, then LDA #$7C ; JSL $84:FE2A ; JML $C3:D40B. Looks like a trampoline
+  that adds a call with A=$7C (music or sound id, inference).
+- New code in D0:5E1A (reached by a changed jump at C4:A194) loops with counter $36 and calls
+  $88:C637, $80:F5B5, and $84:FE2A with A=$79. Purpose unknown.
+- New code at FF:FE30-FEA6 (bank FF, empty 0xFF in the original) sets values and calls $84:FE2A with
+  A=$11, $12, $13 plus $88:C7B6 with PEA arguments. Looks like ending or text sequences
+  (text-like byte runs at FF:FE00-FE2F). The LDA $3BAE reads there are overwritten at once.
+- The upper 4 MB of Deluxe contains a copy of the original code (e.g. the same STZ $3BB0 at
+  0x4086B4 as at 0x86B4), consistent with the 0x40FFC0 header copy. So the 8 MB ROM is not simply
+  4 MB original plus 4 MB of new data.
+- Refined view of the AND-mask change: callers of C5:C72B pass small constants like $F8/$F9, and
+  Deluxe's new code calls $84:FE2A with A=$7C, $79, $11 to $13. The readme lists new songs and
+  Mortal Kombat Trilogy sound effects. Inference: the routine at C5:C72B plays sounds or music and
+  the mask widening allows sound IDs above 255. Not verified. It is not fighter logic.
+
+### Conclusion
+- The Deluxe diff mixes many features (music, endings, menus, stages). Reading Sheeva's selection
+  path from the diff alone is slow. Better route: use the emulator to watch RAM while selecting
+  characters, and test the hidden-chars option and L+R+Start claim directly.
