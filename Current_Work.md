@@ -189,3 +189,16 @@ Not resolved (straight-line search is unreliable here):
   The original AND #$00FF keeps only table[X]. The Deluxe AND #$FFFF keeps both.
 - Inference (not verified): if the tables are byte-indexed, the Deluxe change alters the
   value at these three sites. Whether that is intended is not verified.
+
+## RAM table $52C8 (indexed by slot, writers found)
+- 34 write sites (STA/STA abs,x/abs,y to $52C8 region) found by byte scan. Spot checks:
+  * C0:89F4  STA $52C8,X  value = $52C8,Y (copy from another slot), index X = $2A (slot).
+  * C0:9182  STA $52C8,Y  value = $52C8,X (copy).
+  * C0:B2DE  STA $52C8,X  value = constant $0004 (after JSL $80:F5B5 check).
+  * C0:D62E  STA $52C8,X  value = constant $0010.
+  * C0:F770  STA $52C8,Y  value = $52C8,X (copy).
+- Constants written: $0004, $0010 (and $0008 near C0:89E0 writes to a different table).
+  These are small codes, which fits the C2:9D40 use of the value as an index with CPX #$000F.
+  Inference only: $52C8 is a per-slot state or mode code, not a fighter ID. Not verified.
+- Remaining: caller of C2:A114 (no branch into it; reached by JSR/JSL from elsewhere).
+  The JSR scan was noisy (unaligned matches), so this needs a flow-aware check.
