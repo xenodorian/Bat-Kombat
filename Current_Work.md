@@ -68,3 +68,14 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
   Its patch and notes may document the roster-expansion method. Not yet obtained.
 - Generic SNES guidance found: decompression is done by the game's own 65816 code,
   so the practical method is tracing the game's loader in an emulator.
+
+## Deluxe ROM analysis (v2.3)
+- Uploaded file is a full 8 MB ROM (not a patch). Header "UMK3 DELUXE", map byte 0x35.
+- Readme (5025readme.txt) claims: Sheeva playable (with VS screen and finishers),
+  Rain and Noob Saibot available in towers, Animalities, 3x3 mode, Shang Tsung -> Smoke.
+- Fighter name table at file 0x3E544 is byte-identical to the original.
+  So Sheeva is not added to the original ID table. Her ID mapping is elsewhere (not found yet).
+- Byte diff vs original (first 4 MB): 18,832 changed bytes in ~124 ranges spread across the ROM.
+  Deluxe has extra data in the upper 4 MB (bytes 0x400000-0x7FFFFF).
+- Sheeva string "PLAYABLE SHEEVA, 9 NEW STAGES" at file 0x3BC6B in Deluxe.
+- Next: trace which code path the changed ranges belong to (Sheeva select/VS data).
