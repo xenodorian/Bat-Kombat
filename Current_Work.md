@@ -79,3 +79,14 @@ Not complete. No patch produced. Tools in tools/ are analysis helpers only.
   Deluxe has extra data in the upper 4 MB (bytes 0x400000-0x7FFFFF).
 - Sheeva string "PLAYABLE SHEEVA, 9 NEW STAGES" at file 0x3BC6B in Deluxe.
 - Next: trace which code path the changed ranges belong to (Sheeva select/VS data).
+
+## Community data received (user-provided)
+- Base ROM SHA-1 09C094CA1114BCB6D5917E989686CA79B96CF9EA and CRC32 F5BFE41E:
+  VERIFIED against the uploaded original (sha1sum and CRC32 match).
+- Deluxe credit given as "Lucas Dext5r". Earlier search result said "Lucas Ferreira". Unresolved.
+- Deluxe claimed ROM expansion to 16 MB. Uploaded Deluxe v2.3 file is 8 MB (8,388,608 bytes).
+  CONFLICT: may be a different Deluxe build or a wrong claim.
+- Claimed mask change AND #$00FF -> AND #$FFFF. Checked at C3:E348 (file 0x3E348): unchanged
+  in the uploaded Deluxe file. The change, if it exists, is elsewhere.
+- Screen codes 0B Versus, 0C Title, 0D Character Select, 0F Continue: consistent with the
+  RAM map read earlier.
