@@ -57,3 +57,14 @@ Deliver a patched ROM (not committed to git; ROMs are commercial dumps).
 
 ## Status
 Not complete. No patch produced. Tools in tools/ are analysis helpers only.
+
+## Online research (round 2)
+- Data Crystal UMK3 SNES page: header only (HiROM, 4 MiB, CRC32 F5BFE41E). No fighter/ROM map data.
+- Data Crystal and Cutting Room Floor sub-pages: 404, 403 or not indexed.
+- No Batman Returns SNES ROM map or graphics compression documentation found.
+- No public documentation found for UMK3 SNES fighter data, move lists or sprite compression.
+- Hack leads: "Ultimate Mortal Kombat 3 Deluxe" (SNES, Lucas Ferreira, v2.3) reportedly
+  makes Sheeva playable, so it added a roster entry. romhacking.net page for it returned 403.
+  Its patch and notes may document the roster-expansion method. Not yet obtained.
+- Generic SNES guidance found: decompression is done by the game's own 65816 code,
+  so the practical method is tracing the game's loader in an emulator.
