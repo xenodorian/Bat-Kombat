@@ -95,6 +95,23 @@ class Core:
         for _ in range(frames):
             self.lib.retro_run()
 
+    def _mem(self, kind):
+        L = self.lib
+        L.retro_get_memory_data.restype = C.c_void_p
+        L.retro_get_memory_data.argtypes = [C.c_uint]
+        L.retro_get_memory_size.restype = C.c_size_t
+        L.retro_get_memory_size.argtypes = [C.c_uint]
+        ptr, size = L.retro_get_memory_data(kind), L.retro_get_memory_size(kind)
+        return bytes((C.c_uint8 * size).from_address(ptr))
+
+    def wram(self):
+        """128 KB of SNES work RAM ($7E0000-$7FFFFF)."""
+        return self._mem(2)
+
+    def vram(self):
+        """64 KB of SNES video RAM."""
+        return self._mem(3)
+
     def save_png(self, path):
         Image.fromarray(self.frame).save(path)
 
