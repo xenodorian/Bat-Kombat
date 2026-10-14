@@ -229,3 +229,80 @@ Not resolved (straight-line search is unreliable here):
 - Conclusion so far: Sheeva is not visible on the default roster grid of the Deluxe ROM.
   Her selection path is still unknown (the Deluxe readme mentions Sheeva as playable but not
   how to select her).
+
+# REVIEW AND PLAN (written after the full work-to-date review)
+
+## Accomplished (verified)
+- Tools: cc65, capstone (65816), Pillow, numpy, Playwright, retroarch + snes9x core,
+  tools/umk3rom.py (address mapping, disassembly), tools/tilesheet.py,
+  tools/libretro_harness.py (headless emulator with input scripting, frame capture).
+- ROM facts: UMK3 is 4 MB HiROM (SHA-1 matches the No-Intro hash). Batman Returns is 1 MB LoROM.
+  Deluxe v2.3 is 8 MB. Linear HiROM mapping: file = ((bank - 0xC0) << 16) | addr.
+- Fighter name pointer table at file 0x3E544, 25 IDs (0 to 24). ID 11 has a null pointer.
+  IDs 21 and 22 repeat the Sub-Zero and Smoke names.
+- Name lookup code (bank C3, $E330-$E390): slot index in $F58C, per-slot fighter ID in $F548.
+- Emulator works. Original UMK3 boots to the title, mode select, roster grid, and
+  "Choose Your Destiny". Deluxe boots and shows a roster that looks the same as the original.
+- Batman Returns graphics are compressed (raw tile views are noise).
+- The libretro core exposes SYSTEM_RAM (128 KB) and VIDEO_RAM (64 KB) for reading.
+
+## Not accomplished
+- No Batman sprite extracted. No UMK3 fighter record layout found. No new fighter ID added.
+- No patched ROM. No move list entry. Sheeva's selection path in Deluxe is unknown.
+
+## Work that did not move the project (lesson)
+- About half the effort went into the Deluxe AND-mask change at C5:C72E / C5:C757.
+  Meaning still unknown and probably unrelated to adding a fighter. Stop pursuing it.
+- Two of my own mistakes cost time: a bank-offset error (C2 vs C0 file offsets) and a harness
+  pixel-format bug that produced "palette corruption" that was not in the game.
+
+## Plan (ordered by payoff per effort)
+Milestone ladder. Each milestone leaves a working ROM. Do not attempt full custom Batman
+animation before M2 works.
+
+Phase 1: Get Batman art without decoding Batman Returns compression  [size M]
+ - Run Batman Returns in the harness, script input to reach gameplay, read VRAM and WRAM.
+ - Isolate Batman's sprites: find the OAM shadow buffer in WRAM (544-byte structure that the
+   game DMAs each frame), read tile indices and attributes, pull the 4bpp tiles from VRAM.
+ - Get the palette from a frame (match tile pixels to the screen) or by finding the CGRAM
+   shadow in WRAM.
+ - Output: sprite sheets (PNG plus raw 4bpp) for idle, walk, punch, kick, jump, crouch, block,
+   hit, fall. Visual check by rendering to PNG.
+
+Phase 2: Find how UMK3 stores one fighter and which tables are indexed by fighter ID  [size L]
+ - Use the Deluxe ROM as the answer key. Diff Deluxe against the original (124 ranges), keep
+   the ranges that relate to Sheeva (graphics, pointer tables, win logic).
+ - Test whether Sheeva is ID 11 (null name pointer in both ROMs). Check by reading fighter-ID
+   RAM in the emulator after selecting her in Deluxe.
+ - Enumerate every table with 24 or 25 entries that is indexed by fighter ID (pointer arrays,
+   palettes, portrait data, move data, AI). Confirm with the emulator by reading WRAM while
+   selecting each fighter.
+ - Identify the fighter sprite format and compression by dumping decompressed fighter data
+   from WRAM and VRAM while a known fighter is on screen, and matching it back to ROM.
+
+Phase 3: Milestone M1, Batman selectable with a donor fighter's data  [size M]
+ - Use the empty ID 11 (or a new ID 25) and copy a donor fighter's data tables.
+ - Patch the name table with BATMAN, add the roster cell and portrait.
+ - Expand ROM to 8 MB for new data, fix header size byte and checksum.
+ - Emulator test: roster shows Batman, selecting him starts a match without crashing.
+
+Phase 4: Milestone M2, Batman art replaces the donor's frames  [size XL]
+ - Convert Batman sprite poses to UMK3's frame format. Map each donor animation frame to the
+   closest Batman pose. Keep donor hitboxes and move data at first.
+ - Emulator test: Batman walks, punches, kicks, jumps, blocks, gets hit, and wins or loses.
+
+Phase 5: Milestone M3, move list entries  [size M]
+ - Find the move list screen and its text encoding by driving the emulator to it and matching
+   VRAM tiles to ROM data.
+ - Add Batman's list (normal moves plus whatever specials he has).
+
+Phase 6: Milestone M4, custom specials  [size XL]
+ - Batarang projectile, grapple, cape move. Needs new animation scripts and hitbox entries.
+
+## Risks
+- UMK3 fighter sprite compression is unknown and may be the biggest unknown.
+- Each fighter has hundreds of frames. Re-posing Batman art to match them is large.
+- Without an in-emulator debugger only RAM and VRAM reads are available. Code tracing is
+  static reading plus RAM diffing.
+- The emulator test result is the only proof of any milestone. Do not claim a milestone
+  without an emulator test.
