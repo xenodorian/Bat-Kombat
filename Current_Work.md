@@ -469,3 +469,19 @@ for the idle pose. Full frames still need the sprite attribute table.
   LZ/RLE schemes against the known output. Record each tested scheme and result here.
 - External claim (unverified, from the user): a 900x1650 Batman Returns sheet cut into about 100 poses exists
   in another sandbox. If uploaded here it would replace the OAM assembly step, but the compression blocker above remains.
+
+## Paint test result (the gate Grok proposed; run and checked by me)
+- Pulled commit 15a0702 (art/batman_poses.tar.gz with 100 poses, NEXT.md, tools/batman_vram_test.py).
+  Not yet unpacked or viewed by me beyond the file list.
+- tools/batman_vram_test.py runs, but its sprite-table detection fails: its top candidates ($9A18 etc.) have 1 left-side tile,
+  and $C200 and $C416 hold noise. Its paint_*.png files therefore paint the wrong tiles and prove nothing either way.
+- My own block-fill test (tools/vram_blockfill_test.py) answers the question directly. Filling VRAM 0x4000-0x47FF
+  and 0xA000-0xA7FF with solid colour deletes pieces of Rain's body in the fight frame while Reptile is unaffected.
+  So Rain's live sprite tiles are plain 4bpp in VRAM and writable; no compressor is needed to change them.
+  Rain's tiles are spread over many 2 KB blocks between 0x3800 and 0xFFFF (many blocks change 13-37% of his box).
+- Not solved: which sprite pieces go where. Writing Batman pixels into those tiles only works if the pieces are
+  placed to form his pose. Standard 544-byte OAM shadow was not found in WRAM. WRAM contains repeating 68-byte
+  records (offsets 0x2281, 0x22C5, 0x2307 and 0xC45E, 0xC4A2, 0xC4E6, and 0x16B1F, 0x16B63, 0x16BA7) with entries
+  in Rain's screen box; they may be per-frame sprite piece lists. Not decoded yet.
+- Next: decode one 68-byte record (x, y, tile, attributes), verify by painting only the tiles it names, then map
+  Batman pose pixels onto that piece layout or rewrite the entries to a grid that matches the pose.
