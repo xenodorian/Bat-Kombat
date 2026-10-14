@@ -215,3 +215,17 @@ Not resolved (straight-line search is unreliable here):
   screen animates. Colour and portrait detail are noisy and not yet reliable for identifying
   fighters. Deluxe and original roster frames were captured at the same point (scratchpad).
 - Not yet verified: that Sheeva appears in the Deluxe roster, or that any fighter plays.
+
+## Harness colour bug (corrected)
+- The earlier "palette corruption" images were a HARNESS bug, not the game. snes9x requested
+  RGB565 (pixfmt 2). The harness accepted the request but decoded XRGB8888, which scrambled colours.
+- Fixed: the harness now records the requested pixel format and decodes RGB565 correctly.
+  The UMK3 title screen renders cleanly with the fix.
+- Roster screens (original and Deluxe) now render cleanly (scratchpad roster_orig.png,
+  roster_deluxe.png). Grid layouts look identical by eye: 7 cells in rows 1 and 2, 5 in rows 3
+  and 4, plus the Random cell. Background colours differ (grey vs purple).
+  Pixel diff is about half the pixels, which is dominated by the animated background, so it
+  does not settle whether the portraits differ.
+- Conclusion so far: Sheeva is not visible on the default roster grid of the Deluxe ROM.
+  Her selection path is still unknown (the Deluxe readme mentions Sheeva as playable but not
+  how to select her).

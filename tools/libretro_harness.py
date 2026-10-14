@@ -15,6 +15,7 @@ BTN = {"B": 0, "Y": 1, "SELECT": 2, "START": 3, "UP": 4, "DOWN": 5, "LEFT": 6, "
 
 ENV_SET_PIXEL_FORMAT = 10
 PIX_XRGB8888 = 1
+PIX_RGB565 = 2
 
 ENV_CB = C.CFUNCTYPE(C.c_bool, C.c_uint, C.c_void_p)
 VIDEO_CB = C.CFUNCTYPE(None, C.c_void_p, C.c_uint, C.c_uint, C.c_size_t)
@@ -32,6 +33,7 @@ class Core:
     def __init__(self, path):
         self.lib = C.CDLL(path)
         self.pressed = set()
+        self.pixfmt = PIX_XRGB8888
         self.frame = None
         self.w = self.h = 0
         self.pitch = 0
@@ -52,6 +54,8 @@ class Core:
 
     def _env(self, cmd, data):
         if cmd == ENV_SET_PIXEL_FORMAT:
+            # The core picks the format; record it so frames decode correctly.
+            self.pixfmt = C.cast(data, C.POINTER(C.c_uint)).contents.value
             return True
         return False
 
@@ -61,7 +65,15 @@ class Core:
         self.w, self.h, self.pitch = width, height, pitch
         buf = (C.c_uint8 * (pitch * height)).from_address(data)
         arr = np.frombuffer(buf, dtype=np.uint8).reshape(height, pitch)
-        self.frame = np.ascontiguousarray(arr[:, : width * 4].reshape(height, width, 4)[:, :, [2, 1, 0]])
+        if self.pixfmt == PIX_RGB565:
+            px = arr[:, : width * 2].reshape(height, width, 2).astype(np.uint16)
+            v = px[:, :, 0] | (px[:, :, 1] << 8)
+            r = ((v >> 11) & 31) * 255 // 31
+            g = ((v >> 5) & 63) * 255 // 63
+            b = (v & 31) * 255 // 31
+            self.frame = np.stack([r, g, b], axis=2).astype(np.uint8)
+        else:
+            self.frame = np.ascontiguousarray(arr[:, : width * 4].reshape(height, width, 4)[:, :, [2, 1, 0]])
 
     def _input(self, port, device, index, rid):
         if port == 0 and device == 1 and rid in self.pressed:
