@@ -1,0 +1,131 @@
+ISSUES SUMMARY: Porting Batman into Ultimate Mortal Kombat 3 (SNES)
+Written when work was stopped at the user's request.
+
+STATUS IN ONE PARAGRAPH
+Batman is not in the game. No patched ROM exists. The work so far produced
+analysis tools, a working headless emulator test harness, and partial maps of
+the UMK3 ROM. The main blockers are listed below in order of impact.
+
+-------------------------------------------------------------------------
+1. NO PUBLIC DOCUMENTATION COULD BE READ
+-------------------------------------------------------------------------
+- Searches found no write-up of the UMK3 SNES fighter data layout, its sprite
+  compression, or its move list. They also found nothing on Batman Returns SNES
+  graphics compression.
+- Pages that might help (romhacking.net UMK3 Deluxe page, Data Crystal ROM map,
+  The Cutting Room Floor UMK3 page) are behind a Cloudflare bot check. My fetch
+  tool and a local headless Chromium both got "Just a moment" verification pages.
+- I did not try to defeat the check. I also declined to set up Puppeteer for that
+  purpose.
+- Claude in Chrome tools never appeared in this session, even after the extension
+  was installed. The Internet Archive is blocked for my fetch tool.
+- The Data Crystal RAM map did load. It has screen codes and a few flags but no
+  fighter ID or roster data.
+- Needed from you if you want to unblock this: the Deluxe page text or notes, saved
+  from your own browser (list in Data_Needed.md in the repo).
+
+-------------------------------------------------------------------------
+2. BATMAN ART HAS NOT BEEN EXTRACTED
+-------------------------------------------------------------------------
+- Batman Returns graphics are compressed. Raw 4bpp tile views of the ROM are noise.
+  The compression format is not identified.
+- Plan was to skip decoding: run the game in the emulator and read the already
+  decompressed sprite tiles from video RAM. The emulator core does expose system RAM
+  (128 KB) and video RAM (64 KB), so this is possible in principle.
+- Blocker: I have not yet reached gameplay in Batman Returns under script. A Haiku
+  agent was working on this and was stopped. Its last partial note said results for
+  RIGHT and B looked identical in its test, which may mean button input is not reaching
+  the game, or that the test was flawed. This is unverified.
+- Still needed after that: find the sprite attribute (OAM) buffer in RAM to know which
+  tiles belong to Batman, and find his palette.
+
+-------------------------------------------------------------------------
+3. UMK3 FIGHTER FORMAT IS NOT MAPPED
+-------------------------------------------------------------------------
+- Not known: how a fighter's sprites are stored or compressed, how animation frames,
+  hitboxes, and move data are laid out, where the AI and special-move data live, or
+  where the move list screen and its text are.
+- Known: the fighter name pointer table (file 0x3E544, 25 IDs) and the lookup code
+  that reads it (bank C3, around $E330 to $E390). Several other 25-entry per-fighter
+  tables were found by scan (offsets 0x0986C, 0x1C5A6, 0x2A5A6, 0x2EC7B and others).
+  Their meaning is not confirmed.
+- No in-emulator debugger is available. The only tools are RAM and VRAM reads, static
+  disassembly, and diffing ROMs. This makes tracing code paths slow.
+
+-------------------------------------------------------------------------
+4. ADDING A FIGHTER SLOT IS UNRESOLVED
+-------------------------------------------------------------------------
+- Adding a new ID 25 would require extending every fighter-indexed table. The ones I
+  checked have no spare room.
+- Better idea, unverified: reuse ID 11. It has a null name pointer but real entries
+  in several per-fighter tables (for example C0:986C, C1:C5A6, C2:EC7B). It may be an
+  unused fighter (the Cutting Room Floor mentions leftover Sheeva data). I have not
+  confirmed this in the emulator.
+- The UMK3 Deluxe hack adds a playable Sheeva, so a working roster change exists on
+  this ROM. Its changes do not touch the fighter tables I checked. It changes code,
+  including about 3.5 KB of new code at D0:5E1A and a screen-mode value 0x1E stored
+  to $3A7E. How Sheeva is selected in Deluxe is still unknown.
+- The Deluxe ROM is 8 MB and uses ExHiROM-style header bytes. I could not work out how
+  its upper 4 MB is addressed. A sub-agent's attempt to infer this was inconclusive
+  and I treat its output as unverified.
+
+-------------------------------------------------------------------------
+5. PROBLEMS WITH MY OWN PROCESS
+-------------------------------------------------------------------------
+- A large share of effort went into one Deluxe change (AND #$00FF to AND #$FFFF at
+  C5:C72E and C5:C757). Its purpose is still unknown and it is probably not needed
+  for adding a fighter. This was a poor use of time.
+- I made a bank-offset error (confused file offset 0x9D79 in bank C0 with C2:9D79,
+  which is file 0x29D79). It produced a false conflict that I had to retract.
+- My test harness decoded frames with the wrong pixel format. It produced scrambled
+  "palette corruption" images that were not in the game. This was fixed.
+- Sub-agent reports contained errors that needed checking. Examples: one said the
+  name table changed in Deluxe (it did not; the changed byte was a code immediate),
+  and one labelled a block of new code as a "pointer table". Their output must be
+  verified before use.
+
+-------------------------------------------------------------------------
+6. ENVIRONMENT LIMITS
+-------------------------------------------------------------------------
+- The RetroArch front end cannot run here (its GameMode D-Bus hook aborts). Testing
+  uses a custom Python libretro harness (tools/libretro_harness.py) instead. It
+  works, but it has no debugger or trace log.
+- An emulator with a debugger (for example Mesen 2 or bsnes-plus) was not tried. It
+  could speed up code tracing considerably. I have not checked whether it can be
+  installed here.
+- Nothing can be tested on real hardware. The emulator is the only proof of any
+  change.
+- ROMs are commercial dumps and are not committed to the repository (they are in
+  .gitignore).
+
+-------------------------------------------------------------------------
+7. SCOPE REALITY
+-------------------------------------------------------------------------
+Even if every unknown above is solved, a full Batman fighter needs: converting
+Batman art into UMK3's frame format, re-posing it to fit each animation frame,
+hitbox and move data, special moves, a portrait, and move list text. That is
+likely hundreds of frames of art work plus new animation scripts. A staged approach
+is realistic: (1) selectable Batman on a donor fighter's data, (2) Batman art over
+the donor's frames, (3) move list entries, (4) custom specials.
+
+-------------------------------------------------------------------------
+8. WHAT EXISTS NOW
+-------------------------------------------------------------------------
+Repo: xenodorian/Bat-Kombat, branch claude/keen-clarke-i6br28
+- Current_Work.md: full log, verified facts, corrections, and the milestone plan.
+- Data_Needed.md: list of external pages I could not read and what I need from them.
+- tools/umk3rom.py: address mapping and 65816 disassembly helpers.
+- tools/libretro_harness.py: headless emulator with input scripting, frame capture,
+  and RAM/VRAM readers.
+- tools/tilesheet.py, tools/scan_id_tables.py, tools/deluxe_diff.py: analysis scripts.
+Agent-written scripts br_gameplay.py and umk3_nav.py were not finished and do not
+exist.
+
+-------------------------------------------------------------------------
+9. WHAT WOULD UNBLOCK PROGRESS FASTEST
+-------------------------------------------------------------------------
+1. Notes or a readable copy of the UMK3 Deluxe documentation, saved from your own
+   browser.
+2. A decision on whether I may try installing an emulator with a debugger.
+3. Agreement to the staged approach in section 7, starting with a selectable Batman
+   on a donor fighter, so that each step can be checked in the emulator.
