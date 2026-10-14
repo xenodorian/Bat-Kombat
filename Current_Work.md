@@ -485,3 +485,49 @@ for the idle pose. Full frames still need the sprite attribute table.
   in Rain's screen box; they may be per-frame sprite piece lists. Not decoded yet.
 - Next: decode one 68-byte record (x, y, tile, attributes), verify by painting only the tiles it names, then map
   Batman pose pixels onto that piece layout or rewrite the entries to a grid that matches the pose.
+
+# ISSUES (2026-10-14, Grok session — handoff)
+
+The user stopped this session and is handing the job to another AI. Nothing below is a ROM patch.
+
+## What the user asked for
+- Port Batman Returns sprites, animations, moves, and damage onto a UMK3 fighter.
+- Then, only the art import, until that worked.
+- Then delete five Rain idle frames from the game so the idle list matches Batman's four frames.
+
+## What was not done
+- No Batman art was written into the ROM. Overlays were PNG composites on screenshots.
+- No animation script, move, or damage data was changed.
+- The ROM on disk was not modified in this session.
+
+## The false "playback list"
+- "Rain has 9 idle frames" was a count of files on
+  https://www.mortalkombatwarehouse.com/umk3/rain/sprites/
+  named stance/01.png through stance/09.png. Two more files there, t01.png and t02.png, are the turn.
+- Batman idle was counted by looking at the top row of the Spriters Resource sheet: 4 standing frames.
+- A numbered list (01, 02, 03, 04, 05, 06, 07, 08, 09, then "go back to 01") was typed into the chat.
+  It was not read from the ROM. There is no address for entries 5–9.
+- The user said to delete entries 5–9 from that list, then from the ROM. Only local copies of
+  05.png–09.png were deleted. The ROM still plays Rain's original idle.
+
+## Why the stance script was not found
+- Do not treat the chat list as a ROM address. It is not one.
+- Fighter tiles are compressed in the ROM. A earlier test found 19 of 1,069 on-screen tiles matching
+  the ROM verbatim. In VRAM, during a Rain fight, painting 0x5000 and 0xA000 deletes parts of Rain,
+  so the live tiles are plain 4bpp. That does not locate the script that chooses the next pose.
+- Work RAM was sampled while Rain's chest pixels changed. Bytes that moved with the pose were
+  decompressed tiles and sprite coordinates. No 16-bit pointer advanced only on those pose changes.
+- Per-fighter word tables already noted in this file (0x0986C, 0x0D1F7, 0x1C5A6, 0x2A242, 0x2A5A6,
+  0x2C071, 0x2EC7B) were read. Rain is ID 24 and shares several of those entries with other ninjas.
+  None of the dumped records was verified as a 9-frame stance script.
+- The 3DO source (MKANI.H) uses script commands 0–15 (ANI_END, ANI_JUMP, …) and image offsets.
+  That is a different port. It was not matched to this SNES file.
+
+## Screenshots that are not the game
+These were uploaded to deliverables/ on this branch. They are pictures, not ROM state.
+- batman_pasted.png — a Batman stance PNG scaled and pasted onto a fight screenshot.
+- rain_original.png — the same moment with Rain.
+- overlay_50.png — those two blended at 50%.
+- rain_stance_4.png — four of the nine downloaded stance pictures.
+- rain_from_tiles.png and the one_sprite / batman_overlay images are earlier experiments.
+  The tile-replace attempts painted the wrong cells. The user rejected them.
