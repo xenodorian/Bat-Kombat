@@ -136,9 +136,11 @@ def select_fighter(core, col, row):
 
 
 def to_fight(core, col, row, fight_settle=360):
-    """From boot to a live round: roster pick, tower NOVICE, START, then wait for ROUND 1 intro to finish.
+    """From a freshly loaded ROM to a live round.
 
-    Returns the frame index (number of frames run from boot) at which control is handed over.
+    Steps: boot to roster, move the P1 cursor to (col,row) and press A, wait for the
+    Kombat Tower, press A to pick NOVICE, wait for the climb to settle, press START to
+    start the fight, then wait out the ROUND 1 intro. Returns None; the fight is on screen.
     """
     boot_to_roster(core)
     select_fighter(core, col, row)

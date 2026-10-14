@@ -413,3 +413,13 @@ VERIFIED by emulator (original ROM, roster grid, reading WRAM while moving the c
 - Run it and compare against screenshots before relying on it.
 - This explains why my earlier test (pressing START on the grid with ID 11 poked) never left the grid:
   A confirms, not START.
+
+## Batman Returns gameplay navigation (agent-written, spot-checked by me)
+- tools/br_gameplay.py: boot_to_gameplay(core) then perform(core, action).
+- Sequence (3808 frames): 1000 idle, START 4f, 200 idle, START 4f, 2600 idle -> Stage 1 with Batman visible.
+  I ran it myself and viewed the frame: Batman in Stage 1 with HUD ("BATMAN x3", score).
+- Agent-verified button map (by pixel diff and screenshots): RIGHT/LEFT walk, DOWN crouch, B jump,
+  Y punch, A batarang. X has no effect. L/R unidentified, UP moves up a few pixels.
+  Agent reported two separate processes gave pixel-identical frames for boot plus walk_right.
+- Next for art: find the OAM shadow buffer in WRAM and the Batman tiles in VRAM, get the palette.
+- Note: a reskin (palette swap of an existing fighter) needs only Batman's colours, not his sprites.
