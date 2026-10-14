@@ -202,3 +202,16 @@ Not resolved (straight-line search is unreliable here):
   Inference only: $52C8 is a per-slot state or mode code, not a fighter ID. Not verified.
 - Remaining: caller of C2:A114 (no branch into it; reached by JSR/JSL from elsewhere).
   The JSR scan was noisy (unaligned matches), so this needs a flow-aware check.
+
+## Emulator testing (added)
+- Installed retroarch (apt) and libretro-snes9x. RetroArch front end aborts here
+  (GameMode D-Bus hook, unavoidable), so testing uses tools/libretro_harness.py,
+  a ctypes libretro frontend that loads snes9x_libretro.so, feeds joypad input, and saves frames.
+- Verified: original UMK3 boots, title screen renders, START goes to mode select,
+  then to the fighter roster grid, then "CHOOSE YOUR DESTINY" (frames saved in scratchpad).
+- Frame stride: core reports pitch 1208 bytes for 256x224 XRGB8888. Using 1208 gives a sane image;
+  1024 gives garbage. The harness uses the reported pitch.
+- Roster grid frames differ by about 16 mean intensity between consecutive frames, so the
+  screen animates. Colour and portrait detail are noisy and not yet reliable for identifying
+  fighters. Deluxe and original roster frames were captured at the same point (scratchpad).
+- Not yet verified: that Sheeva appears in the Deluxe roster, or that any fighter plays.
