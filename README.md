@@ -11,10 +11,12 @@ Status: partial. A reskin exists. A real Batman fighter does not.
 
 ## Files
 - Current_Work.md: full log. Verified facts, corrections to earlier mistakes, agent results, and the plan.
+- Lessons_Learned.md: what went wrong in this project and the rules to avoid repeating it.
 - Data_Needed.md: outside pages I could not read (Cloudflare) and what is needed from them.
 - Issues_Summary.txt: summary of blockers (written when work was stopped once).
 - tools/make_batman_reskin.py: builds the reskin ROM from a clean UMK3 (USA) ROM.
       python3 tools/make_batman_reskin.py "Ultimate Mortal Kombat 3 (USA).sfc" UMK3_Batman.sfc
+- tools/dump_br_sprites.py: renders Batman's sprite tiles from Batman Returns video memory.
 - tools/umk3rom.py: HiROM address mapping and 65816 disassembly helpers.
 - tools/libretro_harness.py: headless emulator (snes9x libretro core) with button input, frame capture,
   WRAM/VRAM reads, and RAM pokes (Pro Action Replay style).

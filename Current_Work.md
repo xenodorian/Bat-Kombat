@@ -447,3 +447,10 @@ Known open leads: roster portrait palette (palette 13, ROM 0x3F7C5E), HUD name g
 slot (unverified), Deluxe's hidden-fighter mechanism (HIDDEN CHARS option text replaced ENABLE MOTARO).
 Agent results that were wrong and corrected are listed above. Two agents (HIDDEN CHARS option test and the
 fight-nav rerun) never reported back.
+
+## Failure note (added at the user's request)
+The first crucial step, viewing Batman's actual sprite art, was skipped for hours. See Lessons_Learned.md.
+It has now been done: tools/dump_br_sprites.py renders the tile pieces from Batman Returns VRAM using his
+sprite palette (WRAM 0x3300). The output shows the cowl and chest with the yellow emblem, torso with the
+orange belt, arm, leg and cape pieces, and effect graphics (batarang, explosion, smoke). These are the pieces
+for the idle pose. Full frames still need the sprite attribute table.
