@@ -423,3 +423,14 @@ VERIFIED by emulator (original ROM, roster grid, reading WRAM while moving the c
   Agent reported two separate processes gave pixel-identical frames for boot plus walk_right.
 - Next for art: find the OAM shadow buffer in WRAM and the Batman tiles in VRAM, get the palette.
 - Note: a reskin (palette swap of an existing fighter) needs only Batman's colours, not his sprites.
+
+## Reskin v1 (what was actually produced)
+- tools/make_batman_reskin.py: renames fighter ID 24 pointer to "-BATMAN" (string at 0x3FF90) and recolours
+  Rain's sprite palette (4 words at 0x456E8, 10 words at 0x3EAFB3) from purple to dark blue-grey.
+  37 bytes differ from the original (name, pointer, 14 palette words, checksum).
+- Verified in snes9x via the harness: boots, roster loads, a fight loads, Rain is dark blue-grey in the fight
+  and the roster standee. NOT fixed: the HUD still says RAIN (it is not read from the ASCII name table),
+  the roster portrait is still purple, and sprites, moves and hit data are Rain's.
+- Not done: real Batman sprites, move list, new roster slot.
+- Batman picture from Batman Returns stage 1 saved at deliverables/batman_from_batman_returns_stage1.png.
+- The ROM file is in deliverables/ but is gitignored (commercial dump derivative); only the script is committed.
