@@ -42,6 +42,8 @@ class DbgCore(h.Core):
         L.dbg_add_write.argtypes = [C.c_uint32, C.c_uint32]
         L.dbg_log_read.argtypes = [C.POINTER(_Entry), C.c_int]
         L.dbg_log_read.restype = C.c_int
+        L.dbg_add_poke.argtypes = [C.c_uint32, C.c_uint32, C.c_char_p, C.c_int]
+        L.dbg_add_poke.restype = C.c_int
         L.dbg_log_total.restype = C.c_uint32
 
     def reset_hooks(self):
@@ -55,6 +57,16 @@ class DbgCore(h.Core):
 
     def watch_write(self, lo, hi=None):
         self.lib.dbg_add_write(lo, lo if hi is None else hi)
+
+    def poke_on_exec(self, exec_addr, wram_off, data):
+        """Just before the instruction at exec_addr runs, copy data into work RAM at wram_off (max 8192 bytes, 16 pokes)."""
+        r = self.lib.dbg_add_poke(exec_addr, wram_off, bytes(data), len(data))
+        if r < 0:
+            raise ValueError("poke rejected (too many pokes, too long, or out of range)")
+        return r
+
+    def clear_pokes(self):
+        self.lib.dbg_clear_pokes()
 
     def log(self, max_entries=100000):
         buf = (_Entry * max_entries)()

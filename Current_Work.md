@@ -560,3 +560,48 @@ A fresh idle trace (Rain vs Reptile, dark pixels of the body, not the portal) st
 
 No frames were deleted from the ROM in this pass. The ROM checksum was not touched.
 
+
+## Claude session 2026-10-15: debugger findings (everything below was observed by running the patched core)
+Setup: original UMK3 (USA), Rain (roster cell 0,0) vs Reptile fight, reached with tools/umk3_nav.py to_fight(0,0).
+Tools added or changed: tools/dbg_core.py (exec/read/write watches, poke-on-exec), tools/trace_dma.py (DMA transfer decoder),
+tools/snes9x_dbg.patch (regenerated; includes both fixes below), tools/build_dbg_core.sh (not run end to end).
+
+### Two bugs in my own debugger, fixed
+1. Register mirrors: the hook only folded RAM mirrors, so PPU/DMA register accesses through a mirrored bank (the game's data
+   bank is $88, so STA $2118 is really $88:2118) never matched a watch on $00:2118. That is why my first DMA traces showed
+   zero events. Fixed: addresses with offset $2000-$7FFF in banks $00-$3F and $80-$BF now fold to bank 0.
+2. My first traces also stopped logging before the fight began (300 frames after START is still the VS screen). Trace after
+   to_fight() returns.
+
+### Verified facts about how UMK3 draws fighters
+- Tiles reach video RAM by general DMA every frame (243 VRAM DMAs in 180 fight frames), not by CPU writes to $2118/$2119
+  (zero such writes). The routine that starts them is at $88:B959 (main), with $88:B983, $88:BABB, $84:9DB3 and $84:9DCB for
+  smaller uploads.
+- The sources are work-RAM staging buffers (DMA source -> VRAM byte address): $7E:84A8 -> 0xC400, $7E:86A8 -> 0xC600,
+  $7E:88A8 -> 0xC800, $7E:A0A8 -> 0xE000, $7E:A6A8 -> 0xE600, $7E:ACA8 -> 0xEC00. Sizes vary per frame (192 to 1376 bytes)
+  with the pose. Two small uploads of 144 bytes come straight from ROM ($E3:FDBE, $E3:FE4E), so those are stored raw.
+- The sprite attribute table (OAM) is sent every frame by the routine at $88:BA1D from $7E:C4AA, 544 bytes: standard layout,
+  128 entries of (x, y, tile, attr) then a 32-byte high table. THIS CORRECTS my earlier claim that no standard OAM shadow
+  was found in WRAM. The earlier scans assumed a pattern of many off-screen entries and a base near $C200 and missed it.
+- In that frame Rain is OAM entries 15-24: five 16x16 sprites (tiles 48, 50, 52, 54, 56) and five 8x8 sprites (tiles 58-62),
+  attr 0x30 = name table 0, palette 0. Reptile is entries 1-14 (name table 1, palette 1, h-flipped). Entries 25-36 are shadows or HUD
+  (palette 7). Sprite sizes in use: small 8x8, large 16x16.
+- Painting Rain's tiles solid at VRAM base 0xC000 (tile n at 0xC000 + n*32) deletes pieces of Rain in the frame, while painting
+  at 0x4000 or 0x8000 leaves him unchanged (image: deliverables/p1_paint_base_compare.png, frames left to right: base 0x0000,
+  0x4000, 0x8000, 0xC000). So name table 0 sits at VRAM byte 0xC000, which matches the DMA destinations 0xC400/0xC600/0xC800.
+  Inference from the addresses: tile 48 is at VRAM 0xC600, so $7E:86A8 holds Rain's tile 48 onward for the current pose.
+- The WRAM data port $2180 is written heavily during loading (about 148k bytes) by loops at $83:87AC-87BA and $83:84EC. Only 53 of
+  1069 VRAM tiles appear in that byte stream, so it is not the main tile path. It is probably the decompression or copy loop for
+  other data. Not verified.
+
+### What this changes
+- The earlier "68-byte records" in Current_Work.md may not be needed: the real piece layout is the OAM table at $7E:C4AA.
+- No compressor is needed to show Batman. Two levers exist: (a) write Batman tiles into the staging buffers (or VRAM after the
+  DMA), (b) rewrite OAM entries 15-24 plus spare entries to a grid of Batman pieces. Both can be done from the debugger core
+  with poke_on_exec at the OAM DMA routine ($88:BA1D) and the tile DMA routine ($88:B959).
+- For a real ROM patch the same two hooks become 65816 code in free ROM space, replacing those uploads when the fighter id is Batman.
+
+### Not done
+- Batman art has not been drawn in a fight yet. The poke-on-exec feature is built and compiles but has not been run on a frame.
+- The OAM entries that belong to P1 were found in one idle frame; they change with the pose and with movement.
+- Nothing in the game ROM changed in this session. The recolor reskin (tools/make_batman_reskin.py) remains the only ROM edit.

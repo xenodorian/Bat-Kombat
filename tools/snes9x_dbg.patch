@@ -1,7 +1,7 @@
 diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp
 --- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2022-03-03 16:41:25.000000000 +0000
-+++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2026-10-14 23:59:26.663322656 +0000
-@@ -17,6 +17,102 @@
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2026-10-15 00:07:05.407226861 +0000
+@@ -17,6 +17,130 @@
  #include "missing.h"
  #endif
  
@@ -14,6 +14,12 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +#define DBG_MAX_RANGES 16
 +static DbgEntry dbg_log[DBG_LOG_SIZE];
 +static uint32 dbg_head = 0, dbg_total = 0, dbg_seq = 0;
++
++#define DBG_MAX_POKES 16
++#define DBG_POKE_BYTES 8192
++static uint32 dbg_poke_pc[DBG_MAX_POKES], dbg_poke_off[DBG_MAX_POKES], dbg_poke_len[DBG_MAX_POKES];
++static uint8  dbg_poke_data[DBG_MAX_POKES][DBG_POKE_BYTES];
++static int    dbg_poke_n = 0;
 +static uint8 *dbg_exec_map = NULL;                 /* bitmap over canonical 24-bit addresses */
 +static uint32 dbg_rd_lo[DBG_MAX_RANGES], dbg_rd_hi[DBG_MAX_RANGES];
 +static uint32 dbg_wr_lo[DBG_MAX_RANGES], dbg_wr_hi[DBG_MAX_RANGES];
@@ -27,6 +33,8 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +	uint32 bank = a >> 16, off = a & 0xFFFF;
 +	if ((bank < 0x40 || (bank >= 0x80 && bank < 0xC0)) && off < 0x2000)
 +		return 0x7E0000 | off;
++	if ((bank < 0x40 || (bank >= 0x80 && bank < 0xC0)) && off >= 0x2000 && off < 0x8000)
++		return off;                       /* PPU/CPU registers mirrored in every low bank */
 +	if (bank < 0x40 && off >= 0x8000)  return ((bank + 0xC0) << 16) | off;
 +	if (bank >= 0x80 && bank < 0xC0 && off >= 0x8000) return ((bank + 0x40) << 16) | off;
 +	return a;
@@ -46,6 +54,13 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +void dbg_pre_instr(void)
 +{
 +	dbg_cur_pc = Registers.PBPC;
++	if (dbg_poke_n)
++	{
++		uint32 pc = dbg_canon(Registers.PBPC);
++		for (int i = 0; i < dbg_poke_n; i++)
++			if (pc == dbg_poke_pc[i])
++				memcpy(Memory.RAM + dbg_poke_off[i], dbg_poke_data[i], dbg_poke_len[i]);
++	}
 +	if (dbg_exec_map)
 +	{
 +		uint32 c = dbg_canon(Registers.PBPC);
@@ -68,7 +83,7 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +/* ---- exported API (see tools/dbg_core.py) ---- */
 +void dbg_reset(void)
 +{
-+	dbg_any = 0; dbg_rd_n = 0; dbg_wr_n = 0; dbg_head = 0; dbg_total = 0; dbg_seq = 0;
++	dbg_any = 0; dbg_rd_n = 0; dbg_wr_n = 0; dbg_poke_n = 0; dbg_head = 0; dbg_total = 0; dbg_seq = 0;
 +	if (dbg_exec_map) memset(dbg_exec_map, 0, 1 << 21);
 +}
 +void dbg_add_exec(uint32 addr)
@@ -86,6 +101,19 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +{
 +	if (dbg_wr_n < DBG_MAX_RANGES) { dbg_wr_lo[dbg_wr_n] = dbg_canon(lo); dbg_wr_hi[dbg_wr_n] = dbg_canon(hi); dbg_wr_n++; dbg_any = 1; }
 +}
++
++/* When the instruction at exec_addr is about to run, copy len bytes into work RAM at wram_off (0..0x1FFFF). */
++int dbg_add_poke(uint32 exec_addr, uint32 wram_off, const uint8 *data, int len)
++{
++	if (dbg_poke_n >= DBG_MAX_POKES || len > DBG_POKE_BYTES || wram_off + len > 0x20000) return -1;
++	dbg_poke_pc[dbg_poke_n] = dbg_canon(exec_addr);
++	dbg_poke_off[dbg_poke_n] = wram_off;
++	dbg_poke_len[dbg_poke_n] = len;
++	memcpy(dbg_poke_data[dbg_poke_n], data, len);
++	dbg_poke_n++; dbg_any = 1;
++	return dbg_poke_n - 1;
++}
++void dbg_clear_pokes(void) { dbg_poke_n = 0; }
 +uint32 dbg_log_total(void) { return dbg_total; }
 +int dbg_entry_size(void) { return (int) sizeof(DbgEntry); }
 +/* Copy the most recent up to max entries (oldest first) into out and clear the log. Returns count. */
@@ -104,7 +132,7 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
  static inline void S9xReschedule (void);
  
  void S9xMainLoop (void)
-@@ -142,6 +238,8 @@
+@@ -142,6 +266,8 @@
  			break;
  		}
  
