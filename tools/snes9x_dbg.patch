@@ -1,0 +1,185 @@
+diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp
+--- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2022-03-03 16:41:25.000000000 +0000
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2026-10-14 23:59:26.663322656 +0000
+@@ -17,6 +17,102 @@
+ #include "missing.h"
+ #endif
+ 
++
++#include "dbg_hooks.h"
++
++/* ---- debug hooks (ROM analysis) ---- */
++struct DbgEntry { uint8 type; uint8 val; uint16 pad; uint32 addr; uint32 pc; uint16 a, x, y, s, d; uint8 db, p; uint32 n; };
++#define DBG_LOG_SIZE (1 << 18)
++#define DBG_MAX_RANGES 16
++static DbgEntry dbg_log[DBG_LOG_SIZE];
++static uint32 dbg_head = 0, dbg_total = 0, dbg_seq = 0;
++static uint8 *dbg_exec_map = NULL;                 /* bitmap over canonical 24-bit addresses */
++static uint32 dbg_rd_lo[DBG_MAX_RANGES], dbg_rd_hi[DBG_MAX_RANGES];
++static uint32 dbg_wr_lo[DBG_MAX_RANGES], dbg_wr_hi[DBG_MAX_RANGES];
++static uint32 dbg_cur_pc = 0;
++extern "C" { int dbg_any = 0, dbg_rd_n = 0, dbg_wr_n = 0; }
++
++/* Canonical form: ROM at C0-FF (HiROM), RAM at 7E/7F. */
++static inline uint32 dbg_canon(uint32 a)
++{
++	a &= 0xFFFFFF;
++	uint32 bank = a >> 16, off = a & 0xFFFF;
++	if ((bank < 0x40 || (bank >= 0x80 && bank < 0xC0)) && off < 0x2000)
++		return 0x7E0000 | off;
++	if (bank < 0x40 && off >= 0x8000)  return ((bank + 0xC0) << 16) | off;
++	if (bank >= 0x80 && bank < 0xC0 && off >= 0x8000) return ((bank + 0x40) << 16) | off;
++	return a;
++}
++
++static inline void dbg_push(uint8 type, uint32 addr, uint8 val)
++{
++	DbgEntry &e = dbg_log[dbg_head];
++	e.type = type; e.val = val; e.pad = 0; e.addr = addr; e.pc = dbg_cur_pc;
++	e.a = Registers.A.W; e.x = Registers.X.W; e.y = Registers.Y.W; e.s = Registers.S.W; e.d = Registers.D.W;
++	e.db = Registers.DB; e.p = Registers.PL; e.n = dbg_seq++;
++	dbg_head = (dbg_head + 1) & (DBG_LOG_SIZE - 1);
++	dbg_total++;
++}
++
++extern "C" {
++void dbg_pre_instr(void)
++{
++	dbg_cur_pc = Registers.PBPC;
++	if (dbg_exec_map)
++	{
++		uint32 c = dbg_canon(Registers.PBPC);
++		if (dbg_exec_map[c >> 3] & (1 << (c & 7)))
++			dbg_push('X', c, 0);
++	}
++}
++void dbg_check_read(uint32 addr)
++{
++	uint32 c = dbg_canon(addr);
++	for (int i = 0; i < dbg_rd_n; i++)
++		if (c >= dbg_rd_lo[i] && c <= dbg_rd_hi[i]) { dbg_push('R', c, 0); return; }
++}
++void dbg_check_write(uint32 addr, uint8 val)
++{
++	uint32 c = dbg_canon(addr);
++	for (int i = 0; i < dbg_wr_n; i++)
++		if (c >= dbg_wr_lo[i] && c <= dbg_wr_hi[i]) { dbg_push('W', c, val); return; }
++}
++/* ---- exported API (see tools/dbg_core.py) ---- */
++void dbg_reset(void)
++{
++	dbg_any = 0; dbg_rd_n = 0; dbg_wr_n = 0; dbg_head = 0; dbg_total = 0; dbg_seq = 0;
++	if (dbg_exec_map) memset(dbg_exec_map, 0, 1 << 21);
++}
++void dbg_add_exec(uint32 addr)
++{
++	if (!dbg_exec_map) { dbg_exec_map = (uint8 *) calloc(1 << 21, 1); }
++	uint32 c = dbg_canon(addr);
++	dbg_exec_map[c >> 3] |= (1 << (c & 7));
++	dbg_any = 1;
++}
++void dbg_add_read(uint32 lo, uint32 hi)
++{
++	if (dbg_rd_n < DBG_MAX_RANGES) { dbg_rd_lo[dbg_rd_n] = dbg_canon(lo); dbg_rd_hi[dbg_rd_n] = dbg_canon(hi); dbg_rd_n++; dbg_any = 1; }
++}
++void dbg_add_write(uint32 lo, uint32 hi)
++{
++	if (dbg_wr_n < DBG_MAX_RANGES) { dbg_wr_lo[dbg_wr_n] = dbg_canon(lo); dbg_wr_hi[dbg_wr_n] = dbg_canon(hi); dbg_wr_n++; dbg_any = 1; }
++}
++uint32 dbg_log_total(void) { return dbg_total; }
++int dbg_entry_size(void) { return (int) sizeof(DbgEntry); }
++/* Copy the most recent up to max entries (oldest first) into out and clear the log. Returns count. */
++int dbg_log_read(DbgEntry *out, int max)
++{
++	uint32 have = dbg_total < DBG_LOG_SIZE ? dbg_total : DBG_LOG_SIZE;
++	int n = (int) (have < (uint32) max ? have : (uint32) max);
++	uint32 start = (dbg_head + DBG_LOG_SIZE - n) & (DBG_LOG_SIZE - 1);
++	for (int i = 0; i < n; i++) out[i] = dbg_log[(start + i) & (DBG_LOG_SIZE - 1)];
++	dbg_head = 0; dbg_total = 0;
++	return n;
++}
++}
++/* ---- end debug hooks ---- */
++
+ static inline void S9xReschedule (void);
+ 
+ void S9xMainLoop (void)
+@@ -142,6 +238,8 @@
+ 			break;
+ 		}
+ 
++		if (dbg_any) dbg_pre_instr();
++
+ 		uint8				Op;
+ 		struct	SOpcodes	*Opcodes;
+ 
+diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/dbg_hooks.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/dbg_hooks.h
+--- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/dbg_hooks.h	1970-01-01 00:00:00.000000000 +0000
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/dbg_hooks.h	2026-10-14 23:59:14.205642021 +0000
+@@ -0,0 +1,14 @@
++#ifndef DBG_HOOKS_H
++#define DBG_HOOKS_H
++/* Debug hooks added for ROM analysis: exec breakpoints, ROM/RAM read and write watches, ring log. */
++#include "port.h"
++
++extern "C" {
++extern int dbg_any;       /* nonzero when any exec hook is active */
++extern int dbg_rd_n;      /* number of read watch ranges */
++extern int dbg_wr_n;      /* number of write watch ranges */
++void dbg_pre_instr(void);
++void dbg_check_read(uint32 addr);
++void dbg_check_write(uint32 addr, uint8 val);
++}
++#endif
+diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/getset.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/getset.h
+--- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/getset.h	2022-03-03 16:41:25.000000000 +0000
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/getset.h	2026-10-15 00:00:41.838320974 +0000
+@@ -8,6 +8,7 @@
+ #define _GETSET_H_
+ 
+ #include "cpuexec.h"
++#include "dbg_hooks.h"
+ #include "dsp.h"
+ #include "sa1.h"
+ #include "spc7110.h"
+@@ -56,6 +57,7 @@
+ 
+ inline uint8 S9xGetByte (uint32 Address)
+ {
++	if (dbg_rd_n) dbg_check_read(Address);
+ 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+ 	uint8	*GetAddress = Memory.Map[block];
+ 	int32	speed = memory_speed(Address);
+@@ -159,6 +161,7 @@
+ 
+ inline uint16 S9xGetWord (uint32 Address, enum s9xwrap_t w = WRAP_NONE)
+ {
++	if (dbg_rd_n) { dbg_check_read(Address); dbg_check_read(Address + 1); }
+ 	uint16	word;
+ 
+ 	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
+@@ -319,6 +322,7 @@
+ 
+ inline void S9xSetByte (uint8 Byte, uint32 Address)
+ {
++	if (dbg_wr_n) dbg_check_write(Address, Byte);
+ 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+ 	uint8	*SetAddress = Memory.WriteMap[block];
+ 	int32	speed = memory_speed(Address);
+@@ -425,6 +429,7 @@
+ 
+ inline void S9xSetWord (uint16 Word, uint32 Address, enum s9xwrap_t w = WRAP_NONE, enum s9xwriteorder_t o = WRITE_01)
+ {
++	if (dbg_wr_n) { dbg_check_write(Address, (uint8) Word); dbg_check_write(Address + 1, (uint8) (Word >> 8)); }
+ 	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
+ 	if ((Address & mask) == mask)
+ 	{
+diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/libretro/link.T /opt/snes9x_src/libretro-snes9x-1.61+dfsg/libretro/link.T
+--- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/libretro/link.T	2022-03-03 16:41:25.000000000 +0000
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/libretro/link.T	2026-10-14 23:59:14.236628571 +0000
+@@ -1,4 +1,4 @@
+ {
+-   global: retro_*;
++   global: retro_*; dbg_*;
+    local: *;
+ };

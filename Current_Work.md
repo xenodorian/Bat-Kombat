@@ -531,3 +531,13 @@ These were uploaded to deliverables/ on this branch. They are pictures, not ROM 
 - rain_stance_4.png — four of the nine downloaded stance pictures.
 - rain_from_tiles.png and the one_sprite / batman_overlay images are earlier experiments.
   The tile-replace attempts painted the wrong cells. The user rejected them.
+
+## DEBUGGER BUILT (the missing tool)
+- Built a patched snes9x libretro core with exec breakpoints, ROM/RAM read watches, RAM write watches and a ring log
+  (tools/snes9x_dbg.patch, tools/build_dbg_core.sh, wrapper tools/dbg_core.py). Source came from the Ubuntu
+  libretro-snes9x source package via apt (GitHub is blocked, apt works). Core installed at /opt/snes9x_dbg/ (not in git).
+- Verified: the reset vector target ($C0:83D7) exec hook fires at boot; a write watch on $7E52C8 shows the code at
+  $88:9813 writes the P1 fighter ID, with values 19, 5, 17 as the cursor moves to Reptile, Stryker, Mileena.
+- Not logged by the hooks: opcode fetches, DMA transfers, SPC/APU. Addresses are canonical (ROM C0-FF, RAM 7E/7F).
+- Next (critical path): find the decompressed fighter tiles in WRAM, write-watch that buffer to find the decompression
+  routine and its ROM source pointer, then decode the 68-byte sprite piece records the same way.
