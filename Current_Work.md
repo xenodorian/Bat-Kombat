@@ -541,3 +541,22 @@ These were uploaded to deliverables/ on this branch. They are pictures, not ROM 
 - Not logged by the hooks: opcode fetches, DMA transfers, SPC/APU. Addresses are canonical (ROM C0-FF, RAM 7E/7F).
 - Next (critical path): find the decompressed fighter tiles in WRAM, write-watch that buffer to find the decompression
   routine and its ROM source pointer, then decode the 68-byte sprite piece records the same way.
+
+## Grok session 2026-10-14 (second pass) — still no ROM edit
+Looked up existing MK SNES tools instead of guessing the pointer. The public editor
+https://github.com/darkmoon2321/mk-character-edit is Mortal Kombat 1 (LoROM), not UMK3.
+Its animation scripts are 16-bit words: a frame index, or a command in 0xFFF6–0xFFFE, ended by 0x0000 or 0xFFFF.
+The character header is a word at file 0x1B9A plus bank 0xAE. That header is not in this ROM.
+
+A scan of the UMK3 ROM for the same shape (7–14 small words, ended by 0x0000, previous word also 0x0000)
+found 39 hits. The only sequential ones are C0:9C84 (frame ids 5 through 13) and C0:AF90 (ids 9 through 17).
+They sit inside other data, not in a verified animation table, and were not patched.
+
+A fresh idle trace (Rain vs Reptile, dark pixels of the body, not the portal) still shows no script pointer:
+- Pose changes repeat as `##.#.##.##.#....` about every 16 frames.
+- No 16-bit RAM word steps by 2 or 4 on those changes and stays still otherwise.
+- Bytes that change only on those frames: $53BA (the Y bob, values around 0x4E–0x55) and $A14C (0 or 1).
+- Words in the player record that move are positions, mirrored: $52F8/$53B0, $52FA/$53B2, $5300/$53B8, $5302/$53BA.
+
+No frames were deleted from the ROM in this pass. The ROM checksum was not touched.
+
