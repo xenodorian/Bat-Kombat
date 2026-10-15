@@ -605,3 +605,27 @@ tools/snes9x_dbg.patch (regenerated; includes both fixes below), tools/build_dbg
 - Batman art has not been drawn in a fight yet. The poke-on-exec feature is built and compiles but has not been run on a frame.
 - The OAM entries that belong to P1 were found in one idle frame; they change with the pose and with movement.
 - Nothing in the game ROM changed in this session. The recolor reskin (tools/make_batman_reskin.py) remains the only ROM edit.
+
+## CORRECTION: fighter tiles are NOT compressed (verified with the debugger, 2026-10-15)
+My earlier conclusion ("fighter sprite art is compressed in ROM", based on 19 of 1,069 VRAM tiles matching the ROM) was wrong.
+That test counted every VRAM tile (backgrounds, UI and sprites together) against the whole ROM, so it proved little about fighters.
+Direct evidence:
+- A write watch on the tile staging buffers ($7E:84A8-$7E:8EA7 and $7E:A0A8-$7E:AEA7) shows that during a fight they are
+  written by one unrolled copy routine at $83:83ED-$83:8445: `LDA $0000,Y / STA $7E:80A8,X` repeated, reading 16-bit words
+  from DB:Y. DB (source bank) was $D6, $D7 or $D8 and Y ranged $45C0-$73C0 in the sampled frames, i.e. ROM file offsets
+  0x1645C0-0x1873C0 (file = ((bank - 0xC0) << 16) | Y).
+- For 146 of 146 copies sampled over 40 fight frames, the 32 bytes in the staging buffer are byte-for-byte identical to the
+  32 bytes at the ROM source. Zero differed. So the pose tiles are stored as plain 4bpp in ROM, and no decompressor is
+  involved for them. They are then DMA'd to VRAM unchanged ($88:B959).
+- Drawing the source regions as a plain grid of consecutive tiles looks like noise, which is expected: the engine copies tile
+  blocks from scattered addresses and the sprite table decides how pieces are arranged. The frame is rebuilt from (the ROM tile
+  sources per pose) plus (the OAM entries at $7E:C4AA), not from a sheet in ROM order.
+- What may still be compressed or packed is something else (backgrounds, other data): not tested.
+
+### What this means
+- No decompression step is needed to read or replace fighter art. Replacing a pose means writing new 4bpp tiles to the ROM source
+  address that the copy routine reads, and changing the sprite table pieces that place them.
+- What is still unknown: the list that says, for each animation frame, which ROM tile blocks to copy and which OAM pieces to emit
+  (the caller of $83:83ED and its data table), and where Rain's idle frames sit in it. The debugger can find it: watch reads of the
+  ROM bytes at the $D6-$D8 sources and see which routine fetched those pointers.
+- Superseded statement: "UMK3 fighter art is stored compressed" in the earlier section "UMK3 fighter art is stored compressed".
