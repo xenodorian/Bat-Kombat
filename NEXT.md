@@ -1,3 +1,6 @@
+> UPDATE 2026-10-15: this file is superseded. The paint test it describes was run, and its sprite-table detection was wrong.
+> Tiles are raw in ROM banks $D6-$D8, the sprite table is at $7E:C4AA, and a debugger exists. See "CURRENT PLAN" at the end of Current_Work.md.
+
 # Next step: paint test, not a compressor
 
 The pose cut is in `art/batman_poses.tar.gz` (100 transparent PNGs plus `contact.png` and `frames.json`). Idle stance is `f000_62x89.png`.

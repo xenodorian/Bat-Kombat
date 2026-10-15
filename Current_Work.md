@@ -629,3 +629,56 @@ Direct evidence:
   (the caller of $83:83ED and its data table), and where Rain's idle frames sit in it. The debugger can find it: watch reads of the
   ROM bytes at the $D6-$D8 sources and see which routine fetched those pointers.
 - Superseded statement: "UMK3 fighter art is stored compressed" in the earlier section "UMK3 fighter art is stored compressed".
+
+
+# CURRENT PLAN (written 2026-10-15; supersedes the earlier "REVIEW AND PLAN" section and NEXT.md)
+Status: this is a plan only. No step below has been run. Nothing in the game ROM changes except the earlier Rain recolor.
+
+## Goal
+Batman as a playable fighter in UMK3 (SNES): his art replaces a fighter's sprites in a real fight, moves stay the donor's.
+No move list screen exists in the game, so that is out of scope for now (decided with the user).
+
+## What is already known (verified, see sections above)
+- Debugger: patched snes9x core with exec, read and write watches and poke-on-exec (tools/dbg_core.py, tools/snes9x_dbg.patch).
+- Fighter tiles are raw 4bpp in ROM banks $D6-$D8 (file = ((bank - 0xC0) << 16) | addr). Not compressed. The earlier "compressed" claim was wrong.
+- Per frame the game copies 32-byte tile blocks with the routine at $83:83ED into staging buffers ($7E:84A8-$7E:ACA8),
+  DMAs them to VRAM ($88:B959), builds the sprite table at $7E:C4AA (544 bytes) and sends it with $88:BA1D.
+- Rain's idle pose is OAM entries 15-24: five 16x16 pieces (tiles 48, 50, 52, 54, 56) and five 8x8 pieces (tiles 58-62).
+  Sprite name table 0 is at VRAM byte 0xC000.
+- Fighter id is in WRAM $52C8 (P1). Roster ids 0-24 follow the name table at 0x3E544.
+- Batman art: tile pieces dumped from Batman Returns VRAM (tools/dump_br_sprites.py) and 100 cut poses in art/batman_poses.tar.gz.
+- Only ROM edit so far: tools/make_batman_reskin.py (palette recolor of Rain, name table pointer). Sprites, HUD name and portrait unchanged.
+
+## Not known yet
+- Which routine builds the sprite table and where its per-pose piece records live in ROM (the frame record format and address).
+- The frame-number-to-record table, and the animation script reader (what decides the next frame).
+- Whether Rain's tiles and records are shared with other ninja fighters (Scorpion, Sub-Zero, Reptile, Smoke, Ermac, Noob).
+- How the fighter id selects its animation/tile bank (which of the 25-entry tables, if any).
+- Free ROM space for new tiles. The original is 4 MB and full; Deluxe is 8 MB with an ExHiROM header.
+- The sibling-game hint: the MK1 SNES editor (darkmoon2321/mk-character-edit) documents a frame format of piece counts plus x, y and tile references.
+  Two blind ROM searches for Rain's piece deltas found nothing (a third variant was cancelled). Unconfirmed that UMK3 shares that format.
+
+## Phases (each ends with something visible; do not start the next phase until the check passes)
+A. Find the frame data (debugger, mostly scripting time).
+   A1 Write-watch $7E:C4AA-$7E:C6C9 to find the routine that builds the sprite table.
+   A2 Read-watch the ROM while that routine runs for a few idle frames; print the ROM addresses and bytes it reads.
+   A3 CHECK: decode one record and reproduce Rain's ten OAM entries exactly. Record the format in this file.
+   A4 Find the frame-number-to-record table, and the per-fighter table that selects it.
+B. Record Rain's poses automatically: scripted fight covering idle, walk, jump, crouch, block, punches, kicks, hit, fall.
+   Log per frame: frame id, record address, tile sources, rendered image. Also record at least one other ninja to see what is shared.
+   CHECK: a contact sheet of every recorded pose.
+C. Decision (needs the user only if the data says shared): Rain's data shared with other ninjas?
+   Recommended: give Rain private copies in new ROM space (expand to 8 MB) and repoint only Rain's records. Alternative: in-place overwrite if sharing is absent.
+D. Art tool (tools/, not yet written): scale a Batman pose to Rain's size, slice onto Rain's piece grid, quantize to a 16-colour palette,
+   emit 4bpp tiles. Mapping table from Rain frame types to Batman poses (idle to stance, punch to punch, and so on).
+   CHECK: a rendered mock of each mapped frame before touching the ROM.
+E. Patch builder and emulator check: write tiles and pointers, fix the checksum, boot it, screenshot idle, walk, jump, punch in a real fight.
+   MILESTONE: Batman visibly idling, walking and punching in a UMK3 fight.
+F. Cosmetics: health-bar name (drawing code not found; not read from the ASCII name table) and roster portrait (palette 13 at ROM 0x3F7C5E is shared).
+
+## Rules for this plan
+- Do the decisive check myself before delegating; delegate only side work. Show an image for each phase. Verify every sub-agent claim.
+- Superseded: the 68-byte-record idea, the 544-byte OAM "not found" claim, and "fighter art is compressed". See the correction sections above.
+
+## Effort (honest)
+First visible Batman (idle, walk, main attacks): about a day of focused work. Polished full pose set: longer, since each frame needs a matching Batman pose.
