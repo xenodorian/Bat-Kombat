@@ -682,3 +682,33 @@ F. Cosmetics: health-bar name (drawing code not found; not read from the ASCII n
 
 ## Effort (honest)
 First visible Batman (idle, walk, main attacks): about a day of focused work. Polished full pose set: longer, since each frame needs a matching Batman pose.
+
+---
+
+# STATUS 2026-10-18 (latest; supersedes CURRENT PLAN where they differ)
+
+Verified this session (sources: UMK3 (USA) ROM from the claude branch, Batman Returns for later phases):
+- Debug core built and loads (`tools/build_dbg_core.sh`, fixed so the patch path resolves; see commit 48d5539).
+- The tile DMA path (83:83ED -> 88:B959) is confirmed. $88:BA1D is only a DMA start stub, NOT the sprite-table builder.
+- Sprite table writers during a fight: $80:819D, $80:822A, $80:825F (write-watch on $7E:C4AA).
+- Piece record format for Rain (19 of 19 OAM entries reproduced in one frame):
+  X low byte = rec+2 + $3E, Y high byte = rec+4 + $A2, tile word = rec+6 | $18, records at $7E:56C0 and $7E:57xx.
+  See ROUTINES_UMK3.md and tools/analysis/check_oam_record_formula.py.
+- Other sprite groups in the same frame use other constant base pairs (separate objects). The $7E:73xx/74xx/7Bxx group
+  fits the opponent's on-screen position; not yet proven.
+
+Caveats:
+- The debugger's watch_read reports $7E:170A as 0x00 at the Y add, but poking $170A to $A2 gives the identical result.
+  Trust poke tests over logged read values for this address. (tools/analysis/poke_test_y_base.py)
+- The earlier VRAM paint gate (tools/batman_vram_test.py) did NOT show Rain turning white in any of the four bases.
+  The live tile store is still unconfirmed.
+
+Not started:
+- A4: how the game chooses which record set to draw each animation frame.
+- B: record Rain's sprites across many poses.
+- C-F: design choices, art tool, patch builder, emulator milestone, cosmetics (see CURRENT PLAN).
+
+Repo notes:
+- ROM zips are committed on the claude/keen-clarke-i6br28 branch (public repo). Recommend removing them.
+  Not removed yet; needs owner confirmation because it rewrites branch history.
+- Analysis scripts assume the ROM path is passed in and the scratchpad is used for dumps. No ROM-derived data is in the repo.
