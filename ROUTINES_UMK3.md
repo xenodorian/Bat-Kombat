@@ -19,8 +19,9 @@ INFERRED = plausible from the code but not yet tested.
 - VERIFIED: table size $C4AA..$C6C9 = 544 bytes (0x220), high table is the last 32 bytes.
 - VERIFIED (Rain's pieces, 19 OAM entries in one frame): record is 8 bytes apart; X = rec+2 + 0x3E
   (low byte stored), Y = rec+4 + 0xA2 (high byte stored), tile = rec+6 | $18. Records at $7E:56C0 and $7E:57xx.
-- OPEN: records at $7E:5Exx, $7Exxxx (73xx, 74xx, 7Bxx) do NOT match these bases. Probably the opponent's
-  sprites with other base values. Not yet checked.
+- Other record groups in the same frame each use a constant base pair, so they are separate objects:
+  $7E:5Exx uses X 0x3E, Y 0xC9. $7E:73xx/74xx use X 0x7E, Y 0x5E. $7E:7Bxx uses X 0x7E, Y 0xC9.
+  The 0x7E group fits the opponent (Reptile) position in the fight screenshots. Not yet proven.
 - CAUTION: the watch_read log reported $7E:170A as 0x00 at the Y add, but poking $170A to 0xA2 gives the
   identical result, so the effective Y base is 0xA2. Treat logged base values with care.
 - INFERRED: $08/$0A are the fighter's screen position (values 0x3E/0xA2 in this frame). $18 is palette/priority.
