@@ -17,9 +17,13 @@ INFERRED = plausible from the code but not yet tested.
   - stores record+6 | $18 at $C4AC+x (tile and attribute word)
   - sets the matching bit/entry in the high table at $C6AA+y
 - VERIFIED: table size $C4AA..$C6C9 = 544 bytes (0x220), high table is the last 32 bytes.
-- INFERRED: record layout is 6 bytes with tile word at +6 and X/Y at +2/+4. Not yet decoded
-  against Rain's known OAM entries (next check: A3 in Current_Work.md).
-- INFERRED: $18 is a palette/priority base, $08/$0A are the fighter's screen position.
+- VERIFIED (Rain's pieces, 19 OAM entries in one frame): record is 8 bytes apart; X = rec+2 + 0x3E
+  (low byte stored), Y = rec+4 + 0xA2 (high byte stored), tile = rec+6 | $18. Records at $7E:56C0 and $7E:57xx.
+- OPEN: records at $7E:5Exx, $7Exxxx (73xx, 74xx, 7Bxx) do NOT match these bases. Probably the opponent's
+  sprites with other base values. Not yet checked.
+- CAUTION: the watch_read log reported $7E:170A as 0x00 at the Y add, but poking $170A to 0xA2 gives the
+  identical result, so the effective Y base is 0xA2. Treat logged base values with care.
+- INFERRED: $08/$0A are the fighter's screen position (values 0x3E/0xA2 in this frame). $18 is palette/priority.
 
 ## Tile DMA (earlier findings, confirmed here)
 - $83:83ED copies 16 words from a source chosen by $24/$56 into staging $7E:80A8+x. VERIFIED.
