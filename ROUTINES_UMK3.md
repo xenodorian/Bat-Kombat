@@ -31,3 +31,13 @@ INFERRED = plausible from the code but not yet tested.
 - $88:B959 starts a DMA from $7E:80A8 to VRAM, VRAM address from table. VERIFIED.
 - $88:BA1D is only `sta $420B` (start DMA) then `rtl`. It does NOT build the sprite table.
   The earlier label "send_sprite_table" was wrong. VERIFIED.
+
+## A4: how the record pointer is chosen (partial, 2026-10-18)
+- VERIFIED: the builder's cursor $12 (WRAM $7E:1712) is written only by the builder itself, plus two
+  routines at $88:ACA8 and $88:ACD5 area that set $12 = NOT(WRAM[$355C]) (and NOT(WRAM[$3560]) for the second
+  object). See tools/analysis/log_record_pointer_writers.py.
+- VERIFIED: the same routine loads $0A (the Y base) from WRAM $3662 (object A) and $3664 (object B), and
+  $0E/$22 from the saved values. The Y base $A2 for Rain should therefore come from WRAM $3662 at update time.
+- OPEN: WRAM $355C, $355E, $3662, $3664 read as zero at the end of a frame, so these are transient or set
+  at a different point in the frame. Next: log the writers of $355C and $3662 and find the animation-frame
+  table they come from.
