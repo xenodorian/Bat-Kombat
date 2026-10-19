@@ -720,3 +720,12 @@ Repo notes:
 - Earlier overlay attempts used the wrong pieces (OAM 15-24 are not Rain). Those results are discarded.
 - Not tested: piece-by-piece fit onto the sprite grid, tile splits, palette, and the in-game draw.
 - Verdict: silhouette scale is plausible. Piece fit is the next gate before any ROM edit.
+
+## Piece-level fit (2026-10-18, latest)
+- Rain idle (19 OAM entries, sizes from the high table): 8 pieces 16x16, 11 pieces 8x8. Total 43 8x8 tiles.
+  Bounding box 45x104 px. Table dump saved in the scratchpad (not in repo).
+- Batman idle scaled to the same 45x104 box: 42 8x8 cells contain pixels.
+- Tile count fits (42 needed, 43 available) at the count level only. Not tested: cell alignment with Rain's
+  pieces (they are not on one grid) and the palette (4bpp, 16 colors per sprite palette; Batman's art must be
+  quantized to Rain's palette, which has not been checked).
+- Verdict: tile budget is plausible. Alignment and palette are the next gates.
