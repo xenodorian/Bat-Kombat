@@ -754,3 +754,30 @@ Repo notes:
 - Best: f018_49x82, 90.7% of opaque pixels inside pieces (idle was 82%). Next: f063 (88.7%), f073 and f054 (88.7%).
 - Still about 9% of pixels (about 140 px in the best pose) fall outside the pieces. Not a clean fit.
 - Pose choice helps but does not solve the leg/cape overflow. Option 1 (more pieces) or option 3 (smaller scale) is still needed.
+
+## Session status, 2026-10-18 (end of session, pushed)
+
+Accomplished and pushed to main:
+- Debugger core builds and loads; build script fixed (commit 48d5539).
+- Sprite-table writers located: bank $80 at $819D, $822A, $825F (write-watch on $7E:C4AA).
+- Piece record X formula holds for Rain's first eight pieces. Y term is a per-piece calculation (table difference),
+  not a constant; the earlier "Y base $A2" claim was withdrawn.
+- Y position formula: +/-T[idx] + per-object base, verified on four stores.
+- Tile copy: fighter tiles are read raw from ROM banks $D6-$D8 each frame. All 848 copied words in a 60-frame
+  capture matched the ROM.
+- VRAM tile slot = $C000 + tile*32. Idle range $C600-$C7E0 (tiles $30-$3E).
+- Step 1 coverage: 19 slots mapped in total, only 7 in the idle range. Idle tiles are probably not recopied in a still fight.
+- Layout tests on Batman's idle (f000) and best pose (f018):
+  - Tile count: 42 needed vs 43 available (rough, misleading).
+  - Palette (Rain's ROM palette): passes with visible suit color loss.
+  - Alignment: lower body falls outside Rain's pieces. Idle covers 82%, best pose f018 covers 91%.
+
+Not done:
+- Full idle tile map, pose-cycle capture (rejected by user before running).
+- Batman tile encoding (4bpp), patch file, in-game test.
+- Animation-frame selection (A4), full pose set, cosmetics.
+
+Blockers and open questions:
+- Shared VRAM slots receive different ROM tiles at different poses; in-place edits can affect other poses.
+- Piece-fit gap (about 9-18% of Batman's pixels) needs a decision: add pieces, accept clipping, or scale down.
+- ROM zips are still on the public claude/keen-clarke-i6br28 branch. Removal needs your approval (rewrites history).
