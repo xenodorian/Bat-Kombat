@@ -748,3 +748,9 @@ Repo notes:
 - Image: scratchpad fit/align_test.png.
 - Verdict: a direct swap of Rain's piece layout cannot show Batman's legs or cape. Options: (a) new piece records
   in ROM with more 8x8 pieces, (b) a different Batman pose that fits, (c) a smaller Batman scale that loses detail.
+
+## Option 2: other Batman poses vs Rain's layout (2026-10-18, latest)
+- Scored all 100 poses in art/batman_poses.tar.gz, each scaled to the 45x104 box and cut to Rain's 19 piece rectangles.
+- Best: f018_49x82, 90.7% of opaque pixels inside pieces (idle was 82%). Next: f063 (88.7%), f073 and f054 (88.7%).
+- Still about 9% of pixels (about 140 px in the best pose) fall outside the pieces. Not a clean fit.
+- Pose choice helps but does not solve the leg/cape overflow. Option 1 (more pieces) or option 3 (smaller scale) is still needed.
