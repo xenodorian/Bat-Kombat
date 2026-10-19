@@ -738,3 +738,13 @@ Repo notes:
 - Verdict: palette loss is visible but the figure is recognizable. The suit colour is the main gap. A better
   palette (more blue) would need more of the 16 colors, which depends on the live palette.
 - Not tested: live CGRAM values, dithering, and in-game colour.
+
+## Alignment test (2026-10-18, latest): FAILED for the lower body
+- Batman idle (scaled to Rain's 45x104 box) cut into Rain's 19 piece rectangles (sizes from the high table).
+- 82% of Batman's opaque pixels fall inside a piece. 18% (about 315 px) fall outside and would be lost.
+- Upper body (16x16 pieces) fits. The legs and cape fall in the 8x8 pieces, which are too narrow.
+- Piece area is only 52% filled by Batman. The 42-vs-43 tile count was misleading, because it counted cells
+  on a uniform grid, not the real piece layout.
+- Image: scratchpad fit/align_test.png.
+- Verdict: a direct swap of Rain's piece layout cannot show Batman's legs or cape. Options: (a) new piece records
+  in ROM with more 8x8 pieces, (b) a different Batman pose that fits, (c) a smaller Batman scale that loses detail.
