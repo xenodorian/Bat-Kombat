@@ -17,8 +17,11 @@ INFERRED = plausible from the code but not yet tested.
   - stores record+6 | $18 at $C4AC+x (tile and attribute word)
   - sets the matching bit/entry in the high table at $C6AA+y
 - VERIFIED: table size $C4AA..$C6C9 = 544 bytes (0x220), high table is the last 32 bytes.
-- VERIFIED (Rain's pieces, 19 OAM entries in one frame): record is 8 bytes apart; X = rec+2 + 0x3E
-  (low byte stored), Y = rec+4 + 0xA2 (high byte stored), tile = rec+6 | $18. Records at $7E:56C0 and $7E:57xx.
+- VERIFIED (Rain's pieces, 19 OAM entries in one frame): X = rec+2 + 0x3E (low byte stored), tile = rec+6 | $18.
+  Records at $7E:56C0 and $7E:57xx.
+- CORRECTION: the Y term is NOT verified. The 0xA2 is the value of $7E:170A at the add in a poke test, but
+  sampling $170A at frame boundaries gives 0x0000 (occasionally 0x0092). $0A is a direct-page scratch temp, so its
+  value during the loop is set inside the loop and has not been traced. Treat the Y formula as unresolved.
 - Other record groups in the same frame each use a constant base pair, so they are separate objects:
   $7E:5Exx uses X 0x3E, Y 0xC9. $7E:73xx/74xx use X 0x7E, Y 0x5E. $7E:7Bxx uses X 0x7E, Y 0xC9.
   The 0x7E group fits the opponent (Reptile) position in the fight screenshots. Not yet proven.
@@ -49,3 +52,10 @@ INFERRED = plausible from the code but not yet tested.
   So the Y base $A2 is NOT written here. The value is written somewhere else and read by this loop.
 - OPEN: which code writes the non-zero $A2 into the table, and what selects the animation frame.
   Not found yet. Next: watch writes to $7E:3662 across frames when the Y base changes (jump or crouch).
+
+## A4 jump/crouch sampling (2026-10-18, latest)
+- VERIFIED: WRAM $3662 and $355C each become $0800 for one frame at jump start, and $0400 for one frame at
+  crouch start, then return to $0000. They act as one-frame event pulses, not per-pose base values.
+  Script: tools/analysis/sample_base_words_jump_crouch.py
+- VERIFIED: WRAM $3662 holds $0000 at most frame boundaries, so the Y offset is not a frame-level variable.
+- OPEN: where the Y offset $A2 is set inside the builder loop (trace writes to $7E:170A/$170B during one build).
