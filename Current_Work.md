@@ -781,3 +781,73 @@ Blockers and open questions:
 - Shared VRAM slots receive different ROM tiles at different poses; in-place edits can affect other poses.
 - Piece-fit gap (about 9-18% of Batman's pixels) needs a decision: add pieces, accept clipping, or scale down.
 - ROM zips are still on the public claude/keen-clarke-i6br28 branch. Removal needs your approval (rewrites history).
+
+# STATUS 2026-10-19 — Batman is on screen in a fight
+
+The patcher is tools/make_batman_fighter.py. It reads Ultimate Mortal Kombat 3 (USA).zip
+from this repo and writes a 4 MB ROM. The ROM is not committed. Rain's move code and
+hitboxes are not modified. The Deluxe AND-mask is not touched.
+
+## Addresses read this session (live Rain vs Reptile, tools/umk3_nav.py to_fight(0, 0))
+
+- Fighter id: WRAM $7E:52C8. Value 24 on roster cell (0,0) and in the fight.
+- OAM low table: WRAM $7E:C4AA. 128 entries, 4 bytes each (x, y, tile, attr).
+- OAM high table: WRAM $7E:C6AA. Two bits per sprite: bit 0 is x high, bit 1 is size
+  (0 = 8x8, 1 = 16x16). Rain's body uses both sizes. In one idle frame, 81 unused
+  entries were Y=$E8. There were no Y=$F0 fillers on the original ROM.
+- Rain's pieces are whichever on-screen sprites have attr & $3F == $30 (page 0,
+  palette 0, priority 3). Flips sit in the high bits ($30/$70/$B0/$F0). One idle
+  frame had 16 of them, starting at slot 18, not a fixed 0-18 range.
+- OAM DMA: file 0x8BA19, SNES $88:BA19. Bytes E2 20 A9 01 8D 0B 42
+  (sep #$20 / lda #$01 / sta $420B). This is the hooked instruction. The next
+  instruction, C2 20 6B (rep #$20 / rtl), is left as-is.
+- Builder tail: file 0x806E, SNES $80:806E. Bytes A5 0C 8D 30 1A 6B
+  (lda $0C / sta $1A30 / rtl). Checked, not patched. Writing the sprite list
+  there is too early. The game rebuilds OAM after that return, and the PPU
+  never shows those edits. The DMA site is late enough.
+- Buttons, stable while held: WRAM $7E:1701. Right = bit 0 (value 1), Y = bit 6
+  (value 64). The hook tests word $7E:1700 with bit #$0300 (left/right) and
+  bit #$C0C0 (A/X/Y/B).
+- Fight latch: WRAM $7E:03FE. Stays 0 on the roster (Rain's id is already 24
+  there, but no attr-$30 sprites). Set to 1 only when a fight has at least 8.
+- Sprite name table 0 is VRAM byte $C000 (tile n at $C000 + n*32). Name table 1
+  is VRAM byte $E000. Uploaded pose compared byte-for-byte with VRAM $F800
+  (word address $7C00, page-1 tile $C0) after a fight frame: exact match.
+- VRAM $D400 (page-0 tile $A0) is zeros and is a live background map. Writing
+  tiles there destroys the graveyard. $F800 does not.
+- CGRAM sprite palette 0 is $2121 = 128, 32 bytes. That DMA blanks the screen
+  if it replaces the OAM DMA. It is safe when $4300-$4306 are saved first and
+  restored before sta $420B.
+
+The ROM frame table behind $7E:56C0 was not patched. The hook runs after the
+game has already turned those records into OAM, then replaces the picture.
+
+## What the hook does
+
+JSL at file 0x8BA19 to $FF:DC6E (file 0x3FDC6E, previously FF padding). 513 bytes.
+If id is 24 and at least 8 Rain sprites are on screen: hide those sprites
+(Y=$E0), write 64 8x8 sprites into Y>=$E8 slots, force the high-table size bit
+to 8x8, upload 2048 tile bytes to VRAM word $7C00 and the 16-color palette to
+CGRAM 128. Origin is (48, 112). The pose is scaled with nearest-neighbor into
+64x64 and is not cropped.
+
+Art, from art/batman_poses.tar.gz:
+- idle: frames/f000_62x89.png
+- walk, while LEFT or RIGHT is held: frames/f006_45x90.png
+- attack, while A, B, X or Y is held: frames/f013_81x91.png
+
+## Still Rain
+
+- HUD name. The fight screenshots still say RAIN.
+- Roster portrait. Not edited.
+- Specials, hitboxes, and move code. Not edited.
+- The shadow under the fighter shares sprite palette 0, so it picks up the new
+  colors and draws as a small red/black block under the feet. The cape and legs
+  themselves are in the 64x64 and are not clipped.
+
+## Screenshots opened this session
+
+- deliverables/batman_idle.png — cowl, ears, cape, yellow belt. Not Rain's hood.
+- deliverables/batman_walk.png — stride, cape still visible.
+- deliverables/batman_attack.png — punching arm out, cape still visible.
+
