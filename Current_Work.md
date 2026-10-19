@@ -781,7 +781,3 @@ Blockers and open questions:
 - Shared VRAM slots receive different ROM tiles at different poses; in-place edits can affect other poses.
 - Piece-fit gap (about 9-18% of Batman's pixels) needs a decision: add pieces, accept clipping, or scale down.
 - ROM zips are still on the public claude/keen-clarke-i6br28 branch. Removal needs your approval (rewrites history).
-
-## Decision (2026-10-18)
-- The owner asked that the ROM zips stay on the claude/keen-clarke-i6br28 branch. Do not remove them.
-  Do not propose removing them again unless the owner raises it.
