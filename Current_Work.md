@@ -712,3 +712,11 @@ Repo notes:
 - ROM zips are committed on the claude/keen-clarke-i6br28 branch (public repo). Recommend removing them.
   Not removed yet; needs owner confirmation because it rewrites branch history.
 - Analysis scripts assume the ROM path is passed in and the scratchpad is used for dumps. No ROM-derived data is in the repo.
+
+## Fit test (2026-10-18, latest)
+- Mock only (paste on a fight frame, not a ROM edit): Batman idle (f000_62x89, from art/batman_poses.tar.gz) scaled to
+  the bounding box of Rain's first 19 OAM entries (x 41-94, y 103-215). Batman covers Rain's silhouette at the right
+  height and width. Rain's upper-left arm/hood piece shows past the overlay, so the piece set is not complete.
+- Earlier overlay attempts used the wrong pieces (OAM 15-24 are not Rain). Those results are discarded.
+- Not tested: piece-by-piece fit onto the sprite grid, tile splits, palette, and the in-game draw.
+- Verdict: silhouette scale is plausible. Piece fit is the next gate before any ROM edit.
