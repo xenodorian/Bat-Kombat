@@ -119,3 +119,10 @@ INFERRED = plausible from the code but not yet tested.
   that share the same ROM tiles.
 - NOT DONE: full idle tile set (only 6 of the 8 16x16 slots in $C600-$C6A0 mapped), and which source belongs to the idle frame.
 - Script: tools/analysis/join_tile_sources.py
+
+## Step 1 coverage (300-frame capture, latest)
+- 19 VRAM tile slots mapped to ROM sources in total. Only 7 are in the idle range $C600-$C7E0
+  ($C600, $C620, $C640, $C660, $C680, $C6A0, $C6C0). The idle pose needs 16x16 pieces that also use
+  $C620-style neighbours ($C640+1 row) and 8x8 slots $C800-$C8E0 and $C500 area, which are not yet mapped.
+- Longer capture did not add idle slots. Idle tiles are probably copied only when the pose changes, so an
+  idle-only test may never copy them. Mapping needs captures that cover a full set of poses.
