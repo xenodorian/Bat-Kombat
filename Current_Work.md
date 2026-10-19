@@ -811,27 +811,42 @@ hitboxes are not modified. The Deluxe AND-mask is not touched.
 - Fight latch: WRAM $7E:03FE. Stays 0 on the roster (Rain's id is already 24
   there, but no attr-$30 sprites). Set to 1 only when a fight has at least 8.
 - Sprite name table 0 is VRAM byte $C000 (tile n at $C000 + n*32). Name table 1
-  is VRAM byte $E000. Uploaded pose compared byte-for-byte with VRAM $F800
-  (word address $7C00, page-1 tile $C0) after a fight frame: exact match.
+  is VRAM byte $E000. The pose is uploaded at page-1 tile $80 (VRAM byte $F000,
+  word $7800), 8 rows of 256 bytes. The first two rows matched the ROM bytes.
 - VRAM $D400 (page-0 tile $A0) is zeros and is a live background map. Writing
-  tiles there destroys the graveyard. $F800 does not.
-- CGRAM sprite palette 0 is $2121 = 128, 32 bytes. That DMA blanks the screen
-  if it replaces the OAM DMA. It is safe when $4300-$4306 are saved first and
-  restored before sta $420B.
+  tiles there destroys the graveyard.
+- CGRAM sprite palette 0 ($2121 = 128) can be DMA'd without blanking the screen
+  if $4300-$4306 are saved and restored first. The colours do not stick. The
+  game reloads that palette after the OAM DMA, so the hook keeps the pose on
+  index 15, which is bright in the reloaded palette.
 
 The ROM frame table behind $7E:56C0 was not patched. The hook runs after the
 game has already turned those records into OAM, then replaces the picture.
 
 ## What the hook does
 
-JSL at file 0x8BA19 to $FF:DC6E (file 0x3FDC6E, previously FF padding). 513 bytes.
+JSL at file 0x8BA19 to $FF:DC6E (file 0x3FDC6E, previously FF padding).
 If id is 24 and at least 8 Rain sprites are on screen: hide those sprites
-(Y=$E0), write 64 8x8 sprites into Y>=$E8 slots, force the high-table size bit
-to 8x8, upload 2048 tile bytes to VRAM word $7C00 and the 16-color palette to
-CGRAM 128. Origin is (48, 112). The pose is scaled with nearest-neighbor into
-64x64 and is not cropped.
+(Y=$E0) and write 16 sprites of 16x16. An 8x8 grid does not fit. The OAM DMA
+runs more than once a frame, the game keeps about 70 of the 128 slots for the
+opponent, HUD and effects, and a second pass was stacking copies of the head
+until the middle of the body was gone. 16 sprites of 16x16 cover the same
+64x64 and survive that. Old Batman slots are reused so the copies do not pile
+up. Size bit forced to 16x16. Origin (48, 112).
 
-Art, from art/batman_poses.tar.gz:
+Tiles are the linear 8x8 pose in ROM. Eight DMAs of 256 bytes place each row
+on a 16-wide name-table row starting at page-1 tile $80 (VRAM byte $F000,
+word $7800). A byte compare of the first two rows against VRAM matched.
+
+The 16-color ramp is not what the screen uses. A CGRAM DMA of those colors
+does not stick: the game reloads sprite palette 0 after this hook. Index 15
+is a bright white in that palette, so every opaque pixel is index 15. The
+figure is a solid silhouette. A multi-index quantization comes back as Rain's
+colours and breaks into stripes. Checked by drawing the same pose as one
+index and as a full ramp.
+
+Art, from art/batman_poses.tar.gz, scaled with nearest-neighbor into 64x64,
+not cropped:
 - idle: frames/f000_62x89.png
 - walk, while LEFT or RIGHT is held: frames/f006_45x90.png
 - attack, while A, B, X or Y is held: frames/f013_81x91.png
@@ -841,13 +856,10 @@ Art, from art/batman_poses.tar.gz:
 - HUD name. The fight screenshots still say RAIN.
 - Roster portrait. Not edited.
 - Specials, hitboxes, and move code. Not edited.
-- The shadow under the fighter shares sprite palette 0, so it picks up the new
-  colors and draws as a small red/black block under the feet. The cape and legs
-  themselves are in the 64x64 and are not clipped.
 
 ## Screenshots opened this session
 
-- deliverables/batman_idle.png — cowl, ears, cape, yellow belt. Not Rain's hood.
+- deliverables/batman_idle.png — white silhouette, cowl, ears, cape, feet. Not Rain's hood.
 - deliverables/batman_walk.png — stride, cape still visible.
 - deliverables/batman_attack.png — punching arm out, cape still visible.
 

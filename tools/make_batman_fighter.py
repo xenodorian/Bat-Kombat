@@ -5,9 +5,9 @@ Usage: python3 tools/make_batman_fighter.py "Ultimate Mortal Kombat 3 (USA).zip"
 The zip is the one in this repo. A loose 4 MB .sfc also works. Rain's moves and
 hitboxes are untouched. His 19-piece layout clips a cape, so this does not
 repaint those tiles. The hook is the OAM DMA at file 0x8BA19: it hides Rain and
-writes an 8x8 grid of 8x8 sprites (the whole pose scaled into 64x64, not
-cropped). Tiles and a 16-color palette are DMA'd just before that, and the
-game's DMA program is restored. Poses: idle, walk (LEFT/RIGHT), attack
+writes 16 sprites of 16x16 (the whole pose scaled into 64x64, not cropped).
+The game reloads sprite colours after the hook, so each pose is one bright
+index and reads as a silhouette. Poses: idle, walk (LEFT/RIGHT), attack
 (A/B/X/Y). HUD name, portrait and specials stay Rain's.
 """
 import io
@@ -30,12 +30,12 @@ CAVE = 0x3FDC6E          # $FF:DC6E, a 0xFF run through the end of the 4 MB ROM
 CAVE_BANK = 0xFF
 CAVE_PC = 0xDC6E
 PAL_PC = 0xE06E
-TILE_BASE = 0xC0         # sprite page 1, past Reptile's tiles. Byte VRAM $F800.
-VRAM_WORD = 0x7C00
-POSE_BYTES = 64 * 32     # 8x8 grid, 64x64, whole pose scaled to fit
+TILE_BASE = 0x80         # page 1. 16x16 sprites, rows stride 16, byte VRAM $F000.
+VRAM_WORD = 0x7800
+POSE_BYTES = 64 * 32     # linear 8x8 in ROM; the DMA spreads each row across a 16-wide sheet
 ORIGIN_X = 48
 ORIGIN_Y = 112
-SPRITE_N = 64
+SPRITE_N = 16            # 4x4 of 16x16 covers the 64x64 pose. 8x8 needed more free OAM than the fight has.
 POSES = (
     "frames/f000_62x89.png",  # idle stance
     "frames/f006_45x90.png",  # stride, shown while LEFT or RIGHT is held
@@ -89,7 +89,12 @@ def pose_tiles(png):
                 for x in range(8):
                     r, g, b, a = pix[col * 8 + x, row * 8 + y]
                     if a >= 128:
-                        tile[y][x] = nearest(r, g, b)
+                        # Index 15 is a bright solid colour in the live sprite
+                        # palette. Quantizing to the full ramp does not survive:
+                        # the game reloads CGRAM after this hook, so the ramp's
+                        # indices come back as Rain's colours and the pose turns
+                        # into stripes. One index keeps the whole silhouette.
+                        tile[y][x] = 15
             rows = []
             for y in range(8):
                 p = [0, 0, 0, 0]
@@ -260,6 +265,20 @@ def assemble():
     a.emit(0x60)
 
     a.label("draw")
+    a.emit(0xA2, 0x00, 0x00)      # previous Batman sprites become fillers so this pass redraws one grid
+    a.label("reloop")
+    a.emit(0xBD, 0xAC, 0xC4)
+    a.emit(0x29, 0x00, 0xFF)
+    a.emit(0xC9, 0x00, 0x31)
+    a.br(0xD0, "rnext")
+    a.emit(0xBD, 0xAA, 0xC4)
+    a.emit(0x29, 0xFF, 0x00)
+    a.emit(0x09, 0x00, 0xE8)
+    a.emit(0x9D, 0xAA, 0xC4)
+    a.label("rnext")
+    a.emit(0xE8, 0xE8, 0xE8, 0xE8)
+    a.emit(0xE0, 0x00, 0x02)
+    a.br(0xD0, "reloop")
     a.emit(0xA0, 0x00, 0x00)
     a.emit(0xA2, 0x00, 0x00)
     a.label("dloop")
@@ -271,15 +290,15 @@ def assemble():
     a.br(0x90, "dnext")
     a.emit(0xDA, 0x5A)
     a.emit(0x98)
-    a.emit(0x29, 0x07, 0x00)
-    a.emit(0x0A, 0x0A, 0x0A)
+    a.emit(0x29, 0x03, 0x00)      # col = index & 3
+    a.emit(0x0A, 0x0A, 0x0A, 0x0A)  # *16
     a.emit(0x18, 0x69, ORIGIN_X, 0x00)
     a.emit(0x29, 0xFF, 0x00)
     a.emit(0x48)
     a.emit(0x98)
-    a.emit(0x4A, 0x4A, 0x4A)
+    a.emit(0x4A, 0x4A)            # row = index >> 2
     a.emit(0x29, 0xFF, 0x00)
-    a.emit(0x0A, 0x0A, 0x0A)
+    a.emit(0x0A, 0x0A, 0x0A, 0x0A)
     a.emit(0x18, 0x69, ORIGIN_Y, 0x00)
     a.emit(0x29, 0xFF, 0x00)
     a.emit(0xEB)
@@ -289,11 +308,20 @@ def assemble():
     a.emit(0xAA)
     a.emit(0x68)
     a.emit(0x9D, 0xAA, 0xC4)
-    a.emit(0xA3, 0x03)
+    a.emit(0xA3, 0x03)            # index
+    a.emit(0x29, 0x03, 0x00)
+    a.emit(0x0A)                  # col*2
+    a.emit(0x48)
+    a.emit(0xA3, 0x05)            # index
+    a.emit(0x4A, 0x4A)
+    a.emit(0x29, 0xFF, 0x00)
+    a.emit(0x0A, 0x0A, 0x0A, 0x0A, 0x0A)  # row*32
+    a.emit(0x18, 0x63, 0x01)
     a.emit(0x18, 0x69, TILE_BASE, 0x00)
     a.emit(0x29, 0xFF, 0x00)
     a.emit(0x09, 0x00, 0x31)
     a.emit(0x9D, 0xAC, 0xC4)
+    a.emit(0x68)                  # drop col*2
     a.jsr("fixhi")
     a.emit(0x68)
     a.emit(0x7A, 0xFA)
@@ -323,18 +351,22 @@ def assemble():
     a.br(0xF0, "hs4")
     a.emit(0xBD, 0xAA, 0xC6)
     a.emit(0x29, 0x3F)
+    a.emit(0x09, 0x80)            # 16x16, x high clear
     a.br(0x80, "hst")
     a.label("hs0")
     a.emit(0xBD, 0xAA, 0xC6)
     a.emit(0x29, 0xFC)
+    a.emit(0x09, 0x02)
     a.br(0x80, "hst")
     a.label("hs2")
     a.emit(0xBD, 0xAA, 0xC6)
     a.emit(0x29, 0xF3)
+    a.emit(0x09, 0x08)
     a.br(0x80, "hst")
     a.label("hs4")
     a.emit(0xBD, 0xAA, 0xC6)
     a.emit(0x29, 0xCF)
+    a.emit(0x09, 0x20)
     a.label("hst")
     a.emit(0x9D, 0xAA, 0xC6)
     a.emit(0xC2, 0x30)
@@ -369,6 +401,9 @@ def assemble():
     a.emit(0x60)
 
     a.label("tiles")
+    a.emit(0xC2, 0x30)
+    a.emit(0xA0, 0x00, 0x00)      # row 0..7, 8 tiles each, one row of a 16-wide sheet
+    a.label("trow")
     a.emit(0xC2, 0x20)
     a.emit(0x8A)
     a.emit(0xE2, 0x20)
@@ -378,15 +413,24 @@ def assemble():
     a.emit(0xA9, 0x01, 0x8D, 0x00, 0x43)
     a.emit(0xA9, 0x18, 0x8D, 0x01, 0x43)
     a.emit(0xA9, CAVE_BANK, 0x8D, 0x04, 0x43)
-    a.emit(0xA9, POSE_BYTES & 0xFF, 0x8D, 0x05, 0x43)
-    a.emit(0xA9, (POSE_BYTES >> 8) & 0xFF, 0x8D, 0x06, 0x43)
+    a.emit(0xA9, 0x00, 0x8D, 0x05, 0x43)   # 256 bytes
+    a.emit(0xA9, 0x01, 0x8D, 0x06, 0x43)
     a.emit(0xC2, 0x20)
-    a.emit(0xA9) ; a.emit(VRAM_WORD.to_bytes(2, "little"))
+    a.emit(0x98)                  # row
+    a.emit(0xEB)                  # << 8
+    a.emit(0x18)
+    a.emit(0x69, 0x00, 0x78)      # word $7800 + row*$100 = byte $F000 + row*$200
     a.emit(0x8D, 0x16, 0x21)
     a.emit(0xE2, 0x20)
     a.emit(0xA9, 0x80, 0x8D, 0x15, 0x21)
     a.emit(0xA9, 0x01, 0x8D, 0x0B, 0x42)
     a.emit(0xC2, 0x30)
+    a.emit(0x8A)
+    a.emit(0x18, 0x69, 0x00, 0x01)  # source += 256
+    a.emit(0xAA)
+    a.emit(0xC8)
+    a.emit(0xC0, 0x08, 0x00)
+    a.br(0xD0, "trow")
     a.emit(0x60)
 
     a.label("palette")
