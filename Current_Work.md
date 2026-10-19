@@ -682,3 +682,106 @@ F. Cosmetics: health-bar name (drawing code not found; not read from the ASCII n
 
 ## Effort (honest)
 First visible Batman (idle, walk, main attacks): about a day of focused work. Polished full pose set: longer, since each frame needs a matching Batman pose.
+
+---
+
+# STATUS 2026-10-18 (latest; supersedes CURRENT PLAN where they differ)
+
+Verified this session (sources: UMK3 (USA) ROM from the claude branch, Batman Returns for later phases):
+- Debug core built and loads (`tools/build_dbg_core.sh`, fixed so the patch path resolves; see commit 48d5539).
+- The tile DMA path (83:83ED -> 88:B959) is confirmed. $88:BA1D is only a DMA start stub, NOT the sprite-table builder.
+- Sprite table writers during a fight: $80:819D, $80:822A, $80:825F (write-watch on $7E:C4AA).
+- Piece record format for Rain (19 of 19 OAM entries reproduced in one frame):
+  X low byte = rec+2 + $3E, Y high byte = rec+4 + $A2, tile word = rec+6 | $18, records at $7E:56C0 and $7E:57xx.
+  See ROUTINES_UMK3.md and tools/analysis/check_oam_record_formula.py.
+- Other sprite groups in the same frame use other constant base pairs (separate objects). The $7E:73xx/74xx/7Bxx group
+  fits the opponent's on-screen position; not yet proven.
+
+Caveats:
+- The debugger's watch_read reports $7E:170A as 0x00 at the Y add, but poking $170A to $A2 gives the identical result.
+  Trust poke tests over logged read values for this address. (tools/analysis/poke_test_y_base.py)
+- The earlier VRAM paint gate (tools/batman_vram_test.py) did NOT show Rain turning white in any of the four bases.
+  The live tile store is still unconfirmed.
+
+Not started:
+- A4: how the game chooses which record set to draw each animation frame.
+- B: record Rain's sprites across many poses.
+- C-F: design choices, art tool, patch builder, emulator milestone, cosmetics (see CURRENT PLAN).
+
+Repo notes:
+- ROM zips are committed on the claude/keen-clarke-i6br28 branch (public repo). Recommend removing them.
+  Not removed yet; needs owner confirmation because it rewrites branch history.
+- Analysis scripts assume the ROM path is passed in and the scratchpad is used for dumps. No ROM-derived data is in the repo.
+
+## Fit test (2026-10-18, latest)
+- Mock only (paste on a fight frame, not a ROM edit): Batman idle (f000_62x89, from art/batman_poses.tar.gz) scaled to
+  the bounding box of Rain's first 19 OAM entries (x 41-94, y 103-215). Batman covers Rain's silhouette at the right
+  height and width. Rain's upper-left arm/hood piece shows past the overlay, so the piece set is not complete.
+- Earlier overlay attempts used the wrong pieces (OAM 15-24 are not Rain). Those results are discarded.
+- Not tested: piece-by-piece fit onto the sprite grid, tile splits, palette, and the in-game draw.
+- Verdict: silhouette scale is plausible. Piece fit is the next gate before any ROM edit.
+
+## Piece-level fit (2026-10-18, latest)
+- Rain idle (19 OAM entries, sizes from the high table): 8 pieces 16x16, 11 pieces 8x8. Total 43 8x8 tiles.
+  Bounding box 45x104 px. Table dump saved in the scratchpad (not in repo).
+- Batman idle scaled to the same 45x104 box: 42 8x8 cells contain pixels.
+- Tile count fits (42 needed, 43 available) at the count level only. Not tested: cell alignment with Rain's
+  pieces (they are not on one grid) and the palette (4bpp, 16 colors per sprite palette; Batman's art must be
+  quantized to Rain's palette, which has not been checked).
+- Verdict: tile budget is plausible. Alignment and palette are the next gates.
+
+## Palette test (2026-10-18, latest)
+- Rain's sprite palette taken from ROM (0x456E8 x4 and 0x3EAFB3 x10, the same words the reskin script uses).
+  NOT checked against live CGRAM: the harness does not expose palette memory.
+- Batman idle quantized to those 14 colors (nearest RGB): 12 of 14 entries used. Silhouette, belt and cape are
+  readable. The dark-blue suit comes out purple-black. Image: scratchpad fit/batman_pal_test.png.
+- Verdict: palette loss is visible but the figure is recognizable. The suit colour is the main gap. A better
+  palette (more blue) would need more of the 16 colors, which depends on the live palette.
+- Not tested: live CGRAM values, dithering, and in-game colour.
+
+## Alignment test (2026-10-18, latest): FAILED for the lower body
+- Batman idle (scaled to Rain's 45x104 box) cut into Rain's 19 piece rectangles (sizes from the high table).
+- 82% of Batman's opaque pixels fall inside a piece. 18% (about 315 px) fall outside and would be lost.
+- Upper body (16x16 pieces) fits. The legs and cape fall in the 8x8 pieces, which are too narrow.
+- Piece area is only 52% filled by Batman. The 42-vs-43 tile count was misleading, because it counted cells
+  on a uniform grid, not the real piece layout.
+- Image: scratchpad fit/align_test.png.
+- Verdict: a direct swap of Rain's piece layout cannot show Batman's legs or cape. Options: (a) new piece records
+  in ROM with more 8x8 pieces, (b) a different Batman pose that fits, (c) a smaller Batman scale that loses detail.
+
+## Option 2: other Batman poses vs Rain's layout (2026-10-18, latest)
+- Scored all 100 poses in art/batman_poses.tar.gz, each scaled to the 45x104 box and cut to Rain's 19 piece rectangles.
+- Best: f018_49x82, 90.7% of opaque pixels inside pieces (idle was 82%). Next: f063 (88.7%), f073 and f054 (88.7%).
+- Still about 9% of pixels (about 140 px in the best pose) fall outside the pieces. Not a clean fit.
+- Pose choice helps but does not solve the leg/cape overflow. Option 1 (more pieces) or option 3 (smaller scale) is still needed.
+
+## Session status, 2026-10-18 (end of session, pushed)
+
+Accomplished and pushed to main:
+- Debugger core builds and loads; build script fixed (commit 48d5539).
+- Sprite-table writers located: bank $80 at $819D, $822A, $825F (write-watch on $7E:C4AA).
+- Piece record X formula holds for Rain's first eight pieces. Y term is a per-piece calculation (table difference),
+  not a constant; the earlier "Y base $A2" claim was withdrawn.
+- Y position formula: +/-T[idx] + per-object base, verified on four stores.
+- Tile copy: fighter tiles are read raw from ROM banks $D6-$D8 each frame. All 848 copied words in a 60-frame
+  capture matched the ROM.
+- VRAM tile slot = $C000 + tile*32. Idle range $C600-$C7E0 (tiles $30-$3E).
+- Step 1 coverage: 19 slots mapped in total, only 7 in the idle range. Idle tiles are probably not recopied in a still fight.
+- Layout tests on Batman's idle (f000) and best pose (f018):
+  - Tile count: 42 needed vs 43 available (rough, misleading).
+  - Palette (Rain's ROM palette): passes with visible suit color loss.
+  - Alignment: lower body falls outside Rain's pieces. Idle covers 82%, best pose f018 covers 91%.
+
+Not done:
+- Full idle tile map, pose-cycle capture (rejected by user before running).
+- Batman tile encoding (4bpp), patch file, in-game test.
+- Animation-frame selection (A4), full pose set, cosmetics.
+
+Blockers and open questions:
+- Shared VRAM slots receive different ROM tiles at different poses; in-place edits can affect other poses.
+- Piece-fit gap (about 9-18% of Batman's pixels) needs a decision: add pieces, accept clipping, or scale down.
+- ROM zips are still on the public claude/keen-clarke-i6br28 branch. Removal needs your approval (rewrites history).
+
+## Decision (2026-10-18)
+- The owner asked that the ROM zips stay on the claude/keen-clarke-i6br28 branch. Do not remove them.
+  Do not propose removing them again unless the owner raises it.
