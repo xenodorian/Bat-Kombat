@@ -59,3 +59,12 @@ INFERRED = plausible from the code but not yet tested.
   Script: tools/analysis/sample_base_words_jump_crouch.py
 - VERIFIED: WRAM $3662 holds $0000 at most frame boundaries, so the Y offset is not a frame-level variable.
 - OPEN: where the Y offset $A2 is set inside the builder loop (trace writes to $7E:170A/$170B during one build).
+
+## Y term found (2026-10-18, latest)
+- VERIFIED: the builder loop at $80:812A-$80:8141 computes the piece Y term per piece, not from a constant:
+  `lda $2C74,y ; sec ; sbc $EC64,x ; sta $0A` (both tables are in WRAM $7E, since DB=$7E).
+  So the "$A2" was this value for the first piece, not a base. Source of the earlier 0xA2: $2C74[0x00]=0x0099, $EC64[4]=0xFFF7.
+- VERIFIED on 4 executions in one frame: 3 match exactly (tools/analysis/verify_piece_y_term.py).
+  The 4th (y=0002) is off by 1 (expected 0x5D, got 0x5E). Cause not found; possibly $2C74 changes mid-frame.
+- OPEN: where $2C74 (Y position table) and $EC64 (per-piece offset table) are filled, and the 4th-execution mismatch.
+- The earlier "Y base $A2 is a constant" claim is WITHDRAWN.
