@@ -89,3 +89,13 @@ INFERRED = plausible from the code but not yet tested.
 - $2E9C[y] was $0060 for every object sampled (a per-object constant, probably the character's height).
 - OPEN: what sets idx (the angle or height value). This is the link to the animation/jump state. Not found yet.
 - Script: tools/analysis/log_y_table_writers.py (writers); the lookup check used the same approach.
+
+## Step 1: tile source (2026-10-18, latest)
+- VERIFIED: during a fight, the copy routine at $83:83ED reads fighter tile data directly from ROM banks $D6-$D8
+  every frame (reader PCs $83:8402-$83:8433, 256 distinct addresses in 3 frames, range $D672E0-$D86C9F).
+  So the fighter tiles are read from ROM, not from a compressed stream. This supports the "raw in ROM" note
+  in Current_Work.md and contradicts the "19 of 1,069 match" claim in NEXT.md (that test was probably wrong).
+- NOT VERIFIED: that the bytes read equal the staging buffer. The read-log value field is unreliable (see the
+  $170A note), and the staging buffer reads zero at frame end, so a byte-equality check needs a mid-frame snapshot.
+- DMA sources seen (3 frames): WRAM $7E:C4AA (sprite table, 32/144/224-byte chunks), and other sources. Not parsed fully.
+- Script: tools/analysis/log_rom_tile_reads.py
