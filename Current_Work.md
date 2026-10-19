@@ -729,3 +729,12 @@ Repo notes:
   pieces (they are not on one grid) and the palette (4bpp, 16 colors per sprite palette; Batman's art must be
   quantized to Rain's palette, which has not been checked).
 - Verdict: tile budget is plausible. Alignment and palette are the next gates.
+
+## Palette test (2026-10-18, latest)
+- Rain's sprite palette taken from ROM (0x456E8 x4 and 0x3EAFB3 x10, the same words the reskin script uses).
+  NOT checked against live CGRAM: the harness does not expose palette memory.
+- Batman idle quantized to those 14 colors (nearest RGB): 12 of 14 entries used. Silhouette, belt and cape are
+  readable. The dark-blue suit comes out purple-black. Image: scratchpad fit/batman_pal_test.png.
+- Verdict: palette loss is visible but the figure is recognizable. The suit colour is the main gap. A better
+  palette (more blue) would need more of the 16 colors, which depends on the live palette.
+- Not tested: live CGRAM values, dithering, and in-game colour.
