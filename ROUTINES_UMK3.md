@@ -99,3 +99,12 @@ INFERRED = plausible from the code but not yet tested.
   $170A note), and the staging buffer reads zero at frame end, so a byte-equality check needs a mid-frame snapshot.
 - DMA sources seen (3 frames): WRAM $7E:C4AA (sprite table, 32/144/224-byte chunks), and other sources. Not parsed fully.
 - Script: tools/analysis/log_rom_tile_reads.py
+
+## Step 1: tile number to ROM address (2026-10-18, partial)
+- VERIFIED: the tile upload DMA is set up at $88:B94B (writes $4302/$4303 = staging source) and $88:B933
+  (writes $4305/$4306 = size). Observed staging sources WRAM $7E:86A8, $A0A8, $A6A8 with sizes $00C0, $00E0, $0A0, $05A0
+  (script: tools/analysis/log_tile_dma_setup.py).
+- VERIFIED: VRAM destination is set by $2116/$2117 writes at $88:B952 (values $0000 and $7300/$7000 seen).
+- VERIFIED (earlier): the copy routine $83:83ED moves one 32-byte tile from ROM DB:Y into staging 7E:80A8+x per call.
+- OPEN: join the three sides. Only 8 copies are logged in 6 frames, so the sample is too thin to map all tiles.
+  Need a longer run, and the VRAM word address to tile number conversion (sprite name base is not confirmed).
