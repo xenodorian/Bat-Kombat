@@ -41,3 +41,11 @@ INFERRED = plausible from the code but not yet tested.
 - OPEN: WRAM $355C, $355E, $3662, $3664 read as zero at the end of a frame, so these are transient or set
   at a different point in the frame. Next: log the writers of $355C and $3662 and find the animation-frame
   table they come from.
+
+## A4 update (2026-10-18, later)
+- VERIFIED: over 30 frames, WRAM $3662-$3665 (Y base table) is written only by PC $80:FE19, and
+  WRAM $355C-$355D by PC $88:ACB3, $3560-$3561 by PC $88:ACDA (tools/analysis/log_base_variable_writers.py).
+- VERIFIED: $80:FE19 (`sta $3662,x`) stores A=$0000 at X=$0002 and X=$0000, i.e. it clears entries.
+  So the Y base $A2 is NOT written here. The value is written somewhere else and read by this loop.
+- OPEN: which code writes the non-zero $A2 into the table, and what selects the animation frame.
+  Not found yet. Next: watch writes to $7E:3662 across frames when the Y base changes (jump or crouch).
