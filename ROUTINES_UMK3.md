@@ -79,3 +79,13 @@ INFERRED = plausible from the code but not yet tested.
   ($84:A5F5 through $84:A921), about 6 writes each per frame. Routine not yet decoded.
 - OPEN: index x for $7F0D00 (what sets it), $2E9C source, and the bank $84 routine that fills $EC64.
 - Script: tools/analysis/log_y_table_writers.py
+
+## Y position formula (2026-10-18, latest)
+- VERIFIED on 4 stores in one frame: stored Y-table value = ±T[idx] + $2E9C[y], where T = WRAM $7F0D00 (word
+  table, base WRAM offset $10D00), idx = the index in X at the lookup. Examples: idx $9A -> T=$0039, stored $0099 =
+  $0039 + $0060. idx $100 -> T=$0060, stored $00C0 = $0060 + $0060. idx $1E -> T=$000B, stored $0055 = -$000B + $0060
+  (the negated path at $88:8474).
+- VERIFIED: the two paths differ only by sign (eor/inc at $88:8478-$88:847B). Which path runs depends on idx.
+- $2E9C[y] was $0060 for every object sampled (a per-object constant, probably the character's height).
+- OPEN: what sets idx (the angle or height value). This is the link to the animation/jump state. Not found yet.
+- Script: tools/analysis/log_y_table_writers.py (writers); the lookup check used the same approach.
