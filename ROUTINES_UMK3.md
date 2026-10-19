@@ -68,3 +68,14 @@ INFERRED = plausible from the code but not yet tested.
   The 4th (y=0002) is off by 1 (expected 0x5D, got 0x5E). Cause not found; possibly $2C74 changes mid-frame.
 - OPEN: where $2C74 (Y position table) and $EC64 (per-piece offset table) are filled, and the 4th-execution mismatch.
 - The earlier "Y base $A2 is a constant" claim is WITHDRAWN.
+
+## Y tables: writers found (2026-10-18, latest)
+- VERIFIED: $7E:2C74..2CFF (Y position table, used by the piece loop as `lda $2C74,y`) is written only by PC
+  $88:8488 (`sta $2C74,y`), about 8 writes per frame.
+- INFERRED from the code at $88:8470-$88:848B (not yet traced at runtime):
+  `lda $7F0D00,x` (negated for one branch), `adc $2E9C,y`, `sta $2C74,y`.
+  So Y position = (value from WRAM table $7F0D00 indexed by x) + $2E9C[y]. $7F0D00 looks like a trig/curve table.
+- VERIFIED: $7E:EC64.. (per-piece offset table, used as `sbc $EC64,x`) is written by several PCs in bank $84
+  ($84:A5F5 through $84:A921), about 6 writes each per frame. Routine not yet decoded.
+- OPEN: index x for $7F0D00 (what sets it), $2E9C source, and the bank $84 routine that fills $EC64.
+- Script: tools/analysis/log_y_table_writers.py
