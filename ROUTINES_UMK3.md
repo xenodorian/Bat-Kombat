@@ -108,3 +108,14 @@ INFERRED = plausible from the code but not yet tested.
 - VERIFIED (earlier): the copy routine $83:83ED moves one 32-byte tile from ROM DB:Y into staging 7E:80A8+x per call.
 - OPEN: join the three sides. Only 8 copies are logged in 6 frames, so the sample is too thin to map all tiles.
   Need a longer run, and the VRAM word address to tile number conversion (sprite name base is not confirmed).
+
+## Step 1 result (2026-10-18, 60-frame capture)
+- VERIFIED: all 848 copied words equal the ROM word they came from (copy routine $83:83ED, DB:Y+2k -> staging 7E:80A8+x).
+- VERIFIED: 35 tile DMAs (writer $88:B933 for size, $88:B94B for source, $2116/$2117 for VRAM).
+- VERIFIED: VRAM slot = $C000 + tile*32, so tile $30 = VRAM $C600, which matches the idle tile range $30-$3E.
+- MAPPED: 13 VRAM slots with a ROM source, e.g. $C600 <- ROM $D87F5E, $C640 <- ROM $D87EDE, $C800 <- ROM $D87E1E.
+- EXPECTED CONFLICT: several slots receive different ROM tiles at different times (pose animation). 4 of the 13 slots have
+  more than one source. So an in-place edit must cover every source the idle pose uses, and must not break other poses
+  that share the same ROM tiles.
+- NOT DONE: full idle tile set (only 6 of the 8 16x16 slots in $C600-$C6A0 mapped), and which source belongs to the idle frame.
+- Script: tools/analysis/join_tile_sources.py
