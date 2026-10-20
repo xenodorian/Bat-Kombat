@@ -4,11 +4,10 @@ Usage: python3 tools/make_batman_fighter.py "Ultimate Mortal Kombat 3 (USA).zip"
 
 The zip is the one in this repo. A loose 4 MB .sfc also works. Rain's moves and
 hitboxes are untouched. His 19-piece layout clips a cape, so this does not
-repaint those tiles. The hook is the OAM DMA at file 0x8BA19: it hides Rain and
-writes 16 sprites of 16x16 (the whole pose scaled into 64x64, not cropped).
-The game reloads sprite colours after the hook, so each pose is one bright
-index and reads as a silhouette. Poses: idle, walk (LEFT/RIGHT), attack
-(A/B/X/Y). HUD name, portrait and specials stay Rain's.
+repaint those tiles. The hook is the OAM DMA at file 0x8BA19: it hides Rain and writes 16 sprites
+of 16x16 (the whole pose scaled into 64x64, not cropped) and uploads a
+16-colour Batman palette. Poses: idle, walk (LEFT/RIGHT), attack (A/B/X/Y).
+HUD name, portrait and specials stay Rain's.
 """
 import io
 import sys
@@ -41,24 +40,24 @@ POSES = (
     "frames/f006_45x90.png",  # stride, shown while LEFT or RIGHT is held
     "frames/f013_81x91.png",  # punch, shown while A/B/X/Y is held
 )
-# index 0 is transparent. The rest are a readable Batman ramp, nearest-RGB.
+# index 0 is transparent. The rest are the pose's own colours, in 5-bit steps.
 PALETTE_RGB = [
     (0, 0, 0),
-    (6, 8, 16),
-    (16, 28, 56),
-    (36, 56, 104),
-    (88, 112, 160),
-    (12, 10, 24),
-    (48, 36, 72),
-    (196, 156, 32),
-    (240, 208, 72),
-    (208, 164, 120),
-    (248, 216, 176),
-    (236, 236, 240),
-    (168, 168, 184),
-    (72, 64, 88),
-    (120, 32, 32),
-    (40, 48, 40),
+    (0, 0, 0),          # cowl, cape, boots
+    (0, 16, 24),
+    (32, 32, 48),
+    (48, 64, 96),       # suit
+    (72, 88, 128),
+    (104, 120, 152),
+    (248, 192, 0),      # belt
+    (248, 144, 32),
+    (176, 80, 0),
+    (248, 200, 192),    # skin
+    (160, 176, 200),    # eyes
+    (96, 40, 0),
+    (192, 104, 64),
+    (248, 128, 128),
+    (16, 16, 32),
 ]
 
 
@@ -89,12 +88,7 @@ def pose_tiles(png):
                 for x in range(8):
                     r, g, b, a = pix[col * 8 + x, row * 8 + y]
                     if a >= 128:
-                        # Index 15 is a bright solid colour in the live sprite
-                        # palette. Quantizing to the full ramp does not survive:
-                        # the game reloads CGRAM after this hook, so the ramp's
-                        # indices come back as Rain's colours and the pose turns
-                        # into stripes. One index keeps the whole silhouette.
-                        tile[y][x] = 15
+                        tile[y][x] = nearest(r, g, b)
             rows = []
             for y in range(8):
                 p = [0, 0, 0, 0]

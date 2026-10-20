@@ -815,10 +815,10 @@ hitboxes are not modified. The Deluxe AND-mask is not touched.
   word $7800), 8 rows of 256 bytes. The first two rows matched the ROM bytes.
 - VRAM $D400 (page-0 tile $A0) is zeros and is a live background map. Writing
   tiles there destroys the graveyard.
-- CGRAM sprite palette 0 ($2121 = 128) can be DMA'd without blanking the screen
-  if $4300-$4306 are saved and restored first. The colours do not stick. The
-  game reloads that palette after the OAM DMA, so the hook keeps the pose on
-  index 15, which is bright in the reloaded palette.
+- CGRAM sprite palette 0 ($2121 = 128) is uploaded in the same hook, after the
+  OAM DMA registers are saved. The upload sticks. Index 15 of the first ramp
+  was a dark grey, which is why the one-index build looked like a silhouette.
+  The live pose uses the full ramp: black, blue suit, yellow belt, skin.
 
 The ROM frame table behind $7E:56C0 was not patched. The hook runs after the
 game has already turned those records into OAM, then replaces the picture.
@@ -837,13 +837,9 @@ up. Size bit forced to 16x16. Origin (48, 112).
 Tiles are the linear 8x8 pose in ROM. Eight DMAs of 256 bytes place each row
 on a 16-wide name-table row starting at page-1 tile $80 (VRAM byte $F000,
 word $7800). A byte compare of the first two rows against VRAM matched.
-
-The 16-color ramp is not what the screen uses. A CGRAM DMA of those colors
-does not stick: the game reloads sprite palette 0 after this hook. Index 15
-is a bright white in that palette, so every opaque pixel is index 15. The
-figure is a solid silhouette. A multi-index quantization comes back as Rain's
-colours and breaks into stripes. Checked by drawing the same pose as one
-index and as a full ramp.
+The 16 colours are the pose's own black, blue, yellow and skin, uploaded to
+CGRAM sprite palette 0 in that same hook. A one-index build was only a test;
+it is not the picture this script writes.
 
 Art, from art/batman_poses.tar.gz, scaled with nearest-neighbor into 64x64,
 not cropped:
@@ -859,7 +855,7 @@ not cropped:
 
 ## Screenshots opened this session
 
-- deliverables/batman_idle.png — white silhouette, cowl, ears, cape, feet. Not Rain's hood.
-- deliverables/batman_walk.png — stride, cape still visible.
+- deliverables/batman_idle.png — black cowl, blue suit, yellow belt, cape. Not Rain's hood.
+- deliverables/batman_walk.png — stride, cape and belt still visible.
 - deliverables/batman_attack.png — punching arm out, cape still visible.
 
