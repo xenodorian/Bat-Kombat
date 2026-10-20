@@ -859,3 +859,30 @@ not cropped:
 - deliverables/batman_walk.png — stride, cape and belt still visible.
 - deliverables/batman_attack.png — punching arm out, cape still visible.
 
+## Background, corrected 2026-10-19
+
+The black band where the graveyard sky should be was not $F000 holding the
+stage tiles. Painting page 1 from inside the OAM hook, one 256-byte block at
+a time, did not change the stock picture. $F000 is empty as far as the PPU
+is concerned. The sky is the backdrop, rewritten every scanline by HDMA.
+
+The hook sits on the last DMA of vblank. A 2 KB tile upload there runs about
+16 scanlines into the picture, and the old sprite writer (a pass over all
+128 OAM slots, then another) pushed that to the whole sky. Measured on one
+fight: stock sky mean 75, full hook sky mean 0 from row 0 through row 64.
+
+What changed in tools/make_batman_fighter.py:
+
+- The 16 sprites are straight-line stores into slots 57-72. Those slots stay
+  empty for a stock Rain fight, so there is no search. Size bits for that
+  range are set in the same routine. The 128-slot reclaim pass is gone.
+- The pose tiles and the palette are uploaded only when the source address
+  changes. The last source is kept at WRAM $7E:03F8, which a stock fight
+  does not use. Holding idle, walk, or attack does not upload again.
+
+After that, steady frames measure sky mean 74-79, the same as the unpatched
+fight, and the tombstones are back. The top 8 scanlines stay black. That is
+the count-and-hide walk plus the 16 stores, still crossing out of vblank.
+One frame goes darker when the pose actually changes, because that frame
+does the 2 KB upload.
+
