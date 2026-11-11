@@ -150,3 +150,17 @@ def to_fight(core, col, row, fight_settle=360):
     core.run(CONFIRM_FRAMES, ["START"])
     core.run(fight_settle)      # ROUND 1 intro
     return None
+
+
+def to_fight_2p(core, col=0, row=0, settle=1300):
+    """Two-player match: P1 picks (col,row), P2 joins and takes its default cell. Returns once the round is live.
+
+    P2 has no input unless the caller presses its buttons (core.run2), so it is an idle opponent.
+    """
+    boot_to_roster(core)
+    core.run2(6, [], ["START"])
+    core.run(60)
+    select_fighter(core, col, row)
+    core.run(40)
+    core.run2(CONFIRM_FRAMES, [], ["A"])
+    core.run(settle)

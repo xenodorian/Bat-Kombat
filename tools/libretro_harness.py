@@ -33,6 +33,7 @@ class Core:
     def __init__(self, path):
         self.lib = C.CDLL(path)
         self.pressed = set()
+        self.pressed2 = set()      # second controller, see run2()
         self.pixfmt = PIX_XRGB8888
         self.frame = None
         self.w = self.h = 0
@@ -76,7 +77,7 @@ class Core:
             self.frame = np.ascontiguousarray(arr[:, : width * 4].reshape(height, width, 4)[:, :, [2, 1, 0]])
 
     def _input(self, port, device, index, rid):
-        if port == 0 and device == 1 and rid in self.pressed:
+        if device == 1 and rid in (self.pressed if port == 0 else self.pressed2 if port == 1 else ()):
             return 1
         return 0
 
@@ -127,6 +128,14 @@ class Core:
     def vram(self):
         """64 KB of SNES video RAM."""
         return self._mem(3)
+
+    def run2(self, frames, buttons1=(), buttons2=()):
+        """Like run(), with buttons for controller 1 and controller 2."""
+        self.pressed = {BTN[b] for b in buttons1}
+        self.pressed2 = {BTN[b] for b in buttons2}
+        for _ in range(frames):
+            self.lib.retro_run()
+        self.pressed2 = set()
 
     def save_png(self, path):
         Image.fromarray(self.frame).save(path)

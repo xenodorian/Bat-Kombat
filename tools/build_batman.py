@@ -1,6 +1,6 @@
 """Build the Batman ROM: Rain (fighter id 24) is drawn with a native Batman sprite set.
 
-Usage: python3 -I tools/build_batman.py ORIGINAL_UMK3.sfc OUT.sfc [--map art/batman_frame_map.json] [--ninja DIR]
+Usage: python3 -I tools/build_batman.py ORIGINAL_UMK3.sfc OUT.sfc [--map art/batman_frame_map.json]
 
 How it works (see tools/umk3_sprites.py for the data format):
   * The ROM is expanded to 8 MB ExHiROM (tools/exhirom.py). New data goes in the free lower halves of banks $40+.
@@ -12,7 +12,7 @@ How it works (see tools/umk3_sprites.py for the data format):
     and the set is 27. Everything else in the engine (position, facing, animation, moves, hit boxes) is unchanged.
   * Rain's 16-colour sprite palette (file 0x3EAFAF) is replaced with Batman's.
 The frame map says which Batman pose replaces which ninja frame: {"frames": {"131": {"pose": 0, "dx": 0, "dy": 0}}}.
-Each pose is aligned by its feet point to the ninja frame's feet point (from tools/capture_set_frames.py output).
+Each pose is aligned by its feet point to the ninja frame's feet point (art/ninja_frames.json).
 """
 import argparse
 import json
@@ -184,11 +184,10 @@ def hook_code(header_bank, header_addr):
     return bytes(c)
 
 
-def build(rom4, frame_map, ninja_dir, poses_rgba, report=None):
+def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     ba.init_slots(rom4)
     ninja = umk3_sprites.SpriteSet(rom4, NINJA_SET)
     nframes = ninja.frame_count()
-    ninja_meta = json.load(open(os.path.join(ninja_dir, "frames.json")))
     used = sorted({int(v["pose"]) for v in frame_map.values()})
     palette = ba.build_palette(poses_rgba, used)
     store = TileStore()
@@ -209,9 +208,7 @@ def build(rom4, frame_map, ninja_dir, poses_rgba, report=None):
             records[f] = bytes(rom4[off:off + ninja.decode(f)[1]])
             continue
         p = pose(int(m["pose"]), bool(m.get("flip")))
-        cap = np.array(Image.open(os.path.join(ninja_dir, "f%03d.png" % f)))
-        nx, ny = feet_point(cap > 0)
-        nx, ny = nx - CAP_ORIGIN[0], ny - CAP_ORIGIN[1]            # ninja feet point in object-local pixels
+        nx, ny = ninja_geom[str(f)]["feet"]                     # ninja feet point in object-local pixels
         ox = nx - p.feet[0] + int(m.get("dx", 0))
         oy = ny - p.feet[1] + int(m.get("dy", 0))
         records[f] = p.record(ox, oy)
@@ -302,15 +299,15 @@ def main():
     ap.add_argument("rom")
     ap.add_argument("out")
     ap.add_argument("--map", default=os.path.join(REPO, "art", "batman_frame_map.json"))
-    ap.add_argument("--ninja", default=os.path.join(REPO, "art", "ninja_frames"),
-                    help="output directory of tools/capture_set_frames.py")
+    ap.add_argument("--ninja", default=os.path.join(REPO, "art", "ninja_frames.json"),
+                    help="feet points of the ninja frames, written by tools/make_frame_map.py")
     ap.add_argument("--poses", default=os.path.join(REPO, "art", "batman_poses.tar.gz"))
     ap.add_argument("--work", default=os.path.join(REPO, "build", "poses"))
     a = ap.parse_args()
     rom4 = open(a.rom, "rb").read()
     frame_map = json.load(open(a.map))["frames"]
     report = {}
-    rom = build(rom4, frame_map, a.ninja, ba.load_poses(a.poses, a.work), report)
+    rom = build(rom4, frame_map, json.load(open(a.ninja)), ba.load_poses(a.poses, a.work), report)
     open(a.out, "wb").write(rom)
     print(json.dumps({k: v for k, v in report.items() if k != "palette"}))
 
