@@ -937,3 +937,15 @@ Checked: each move fires with its input and does damage; 9,000 frames of random 
 toward the special inputs ran without a freeze.
 Not checked: the moves when Batman is player 2, the air version of the teleport, CPU-controlled Batman.
 Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves need the matcher copied to another bank.
+
+## Step 2 of 4, 2026-11-11: move list screen (done)
+
+- The game has a text screen between the VS screen and the fight that lists active kombat kodes
+  (routine $85:E805, table of {flag address, value, string} at $85:EA3E, 240 frames long).
+- Text routines: $88:90F8 prints a centred line (A = string address, X = bank, Y = pixel row);
+  $88:9183 prints at X/Y with the string address pushed. Strings are plain ASCII, zero ended, upper case.
+- tools/move_list_patch.py makes that screen appear when $7E:52C8 or $7E:52CA is 24 and prints seven lines
+  (title and six moves) from $FF:DD00. Patched jumps: $85:E834 and $85:E8E4.
+- Checked: Batman vs Noob shows the list for 241 frames, then the fight starts normally.
+  Mileena vs Noob does not show it. Screenshot: deliverables/batman_move_list.png.
+- Not checked: one-player ladder, and a match with a kombat kode active at the same time.

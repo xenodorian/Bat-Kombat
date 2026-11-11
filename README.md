@@ -33,6 +33,11 @@ Directions are for Batman facing right; mirror them when he faces left.
 
 ![Batman moves](deliverables/batman_moves.png)
 
+The same list is shown in the game for four seconds between the VS screen and the fight, whenever Batman is
+in the match (`tools/move_list_patch.py`):
+
+![Move list screen](deliverables/batman_move_list.png)
+
 Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents the move table format.
 
 ## What is still borrowed
@@ -41,7 +46,6 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
 - The grapple rope, explosive fireball and hit effects use the original art. Only the batarang is redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
-- The game has no move list screen, so none was added.
 - See `Current_Work.md` (last section) for the VS-screen portrait and win-banner status.
 
 ## Rebuild
@@ -83,7 +87,7 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 
 ## Files
 
-- `tools/build_batman.py`, `batman_moves_patch.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
+- `tools/build_batman.py`, `batman_moves_patch.py`, `move_list_patch.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
 - `tools/umk3_sprites.py`, `capture_set_frames.py`, `record_actions.py`, `review_map.py`, `action_sheet.py`, `dis65.py`: analysis and tests.
 - `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.
 - `art/batman_poses.tar.gz`: 100 Batman poses (a sprite rip of Batman Returns). `art/batman_frame_map.json`, `art/ninja_frames.json`: mapping data.

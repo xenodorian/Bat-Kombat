@@ -30,6 +30,7 @@ import batman_art as ba
 import exhirom
 import batman_moves_patch
 import hud_name_patch
+import move_list_patch
 import roster_portrait_patch
 import umk3_sprites
 
@@ -340,6 +341,7 @@ def main():
     roster_portrait_patch.patch(rom4, face)
     hud_name_patch.patch(rom4)
     batman_moves_patch.patch(rom4)
+    move_list_patch.patch(rom4)
     rom4 = bytes(rom4)
     frame_map = json.load(open(a.map))["frames"]
     report = {}
