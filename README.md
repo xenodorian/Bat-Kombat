@@ -30,6 +30,13 @@ Directions are for Batman facing right; mirror them when he faces left.
 | Explosive | Down, Back, Low Punch | Ermac's fireball |
 | Cape Charge | Back, Forward, Low Kick | Reptile's dash |
 | Spin Kick | Back + High Kick | Rain's roundhouse (unchanged) |
+| Fatality 1 | Down, Down, Forward, High Kick (close) | Ermac's uppercut decapitation |
+| Fatality 2 | Forward, Forward, Down, Low Punch (close) | Ermac's lift and slam |
+| Babality | Forward, Back, Back, High Punch | Rain's (unchanged) |
+| Stage fatality | Forward, Down, Forward, Low Kick | Rain's (unchanged) |
+
+![Fatality 1](deliverables/batman_fatality_1.png)
+![Fatality 2](deliverables/batman_fatality_2.png)
 
 ![Batman moves](deliverables/batman_moves.png)
 

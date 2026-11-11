@@ -949,3 +949,22 @@ Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves 
 - Checked: Batman vs Noob shows the list for 241 frames, then the fight starts normally.
   Mileena vs Noob does not show it. Screenshot: deliverables/batman_move_list.png.
 - Not checked: one-player ladder, and a match with a kombat kode active at the same time.
+
+## Step 3 of 4, 2026-11-11: fatalities (done)
+
+- Finisher kinds in the move table: 2 = fatality (handler $82:8011 first, $82:801F second), 6 = friendship
+  ($83:F2D1), 7 = babality ($82:C747). Stage fatality is kind 0 with handler $82:C727 and condition $82:D3FE.
+  Checked against Jade's known inputs (babality D,D,F,D,HK and friendship B,D,B,B,HK match her records).
+- $82:8011 / $82:801F jump through per-fighter tables at $82:802D / $82:8065. Fighter 24 held $8000 (none).
+  Rain had only a babality and a stage fatality in the original.
+- Batman now has two fatalities: table entries point to Ermac's routines ($82:842E uppercut, $82:8471 slam),
+  with new kind-2 records (condition $82:D4BF = close). Both run to the FATALITY banner on Batman.
+  The babality still works after the table move.
+- Bank $82 had no room for more records, so tools/batman_moves_patch.py now writes a copy of the matcher
+  and one table for all buttons at $FF:E000. A 4-byte stub at $82:EA7C jumps to it. $82:FF0B is free again.
+- Move list screen now has ten lines (specials, fatalities, babality).
+- Test rig: scratch script wins two rounds by poking P2 health ($7E:3898) to 1, then films the input.
+- Checked: both fatalities, babality, all five specials after the table move, 9,000 frames random input.
+- Not checked: stage fatality on a pit stage, friendship (Batman has none), fatalities with Batman as player 2,
+  the other ninjas' fatalities on Batman (only Ermac's two were filmed).
+- Known: the win banner still says RAIN WINS during the fatality. That is in step 4.
