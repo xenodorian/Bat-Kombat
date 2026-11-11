@@ -968,3 +968,14 @@ Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves 
 - Not checked: stage fatality on a pit stage, friendship (Batman has none), fatalities with Batman as player 2,
   the other ninjas' fatalities on Batman (only Ermac's two were filmed).
 - Known: the win banner still says RAIN WINS during the fatality. That is in step 4.
+
+## Step 4, 2026-11-11: the rest. Part A: BATMAN WINS banner (done)
+
+- Round and win banners are frames of sprite set 19 (98 frames): 1-18 and 92-98 "<NAME> WINS", 22-26 ROUND n,
+  19 FLAWLESS VICTORY, 60-66 FINISH HIM, 98 RAIN WINS. One frame per fighter, drawn by the same sprite engine.
+- tools/make_win_banner.py composes art/batman_wins.png from the game's own letters (B, A from KABAL, T, M from
+  MOTARO, A, N and WINS from KANO), captured with tools/capture_set_frames.py ROM DIR 19.
+- tools/build_batman.py writes a copy of set 19's tables in expanded space with frame 98 replaced and one new raw
+  tileset, and repoints set 19 in the set table ($86:EAEC / $86:EB24, index 19). All fighters use the copy.
+- Checked: BATMAN WINS shows after a round win; ROUND 1 and FLAWLESS VICTORY still draw. Screenshot: deliverables/batman_wins.png.
+- Not checked: every other fighter's win banner (frames 65-97 were copied byte for byte, 1-64 are untouched).

@@ -13,7 +13,7 @@ He takes Rain's slot (top-left cell of the fighter select grid).
   animation timing are the game's. He works as player 1 and as player 2 (mirrored).
 - 243 of Rain's body frames are replaced by 55 Batman poses: stance, walk, run, crouch, block, jumps, punches,
   kicks, uppercut, sweep, hit reactions, knockdown, get-up, dizzy and victory.
-- Select screen: Batman portrait in Rain's cell, Batman standee. Health bar name reads BATMAN.
+- Select screen: Batman portrait in Rain's cell, Batman standee. Health bar name reads BATMAN. The win banner reads BATMAN WINS.
 - Other fighters are untouched, including the other ninjas that share Rain's sprite set.
 - Stress test: 12,000 frames of random input in one-player and two-player modes without a hang.
 
@@ -53,7 +53,7 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
 - The grapple rope, explosive fireball and hit effects use the original art. Only the batarang is redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
-- See `Current_Work.md` (last section) for the VS-screen portrait and win-banner status.
+- The large portrait on the VS screen is still Rain.
 
 ## Rebuild
 

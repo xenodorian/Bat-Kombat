@@ -44,6 +44,7 @@ HOOK_CODE = 0x3FDC6E               # $FF:DC6E, 0xFF padding in the original
 FIRST_NEW_TILESET = 47             # the ninja set uses tilesets 0-46
 MAX_TILESETS = 64
 PORTRAIT_POSE, PORTRAIT_CROP = 0, (26, 0, 50, 36)   # cowl and emblem of the standing pose
+TEXT_SET, WIN_FRAME = 19, 98        # sprite set of the banners; frame 98 is RAIN WINS
 CAP_ORIGIN = (128, 176)            # origin pixel inside the captured ninja frame images
 
 
@@ -82,8 +83,8 @@ def tile_bytes(px):
 class TileStore:
     """Unique raw tiles, 256 per tileset. Returns tile words (tile << 8 | tileset << 2 | flips)."""
 
-    def __init__(self):
-        self.tiles, self.index = [], {}
+    def __init__(self, first=FIRST_NEW_TILESET, limit=MAX_TILESETS):
+        self.tiles, self.index, self.first, self.limit = [], {}, first, limit
 
     def word(self, px, allow_flip):
         variants = [(0, px)]
@@ -99,11 +100,10 @@ class TileStore:
         self.index[b] = n
         return self._word(n, 0)
 
-    @staticmethod
-    def _word(n, flips):
-        ts = FIRST_NEW_TILESET + n // 256
-        if ts >= MAX_TILESETS:
-            raise MemoryError("more than %d Batman tiles" % ((MAX_TILESETS - FIRST_NEW_TILESET) * 256))
+    def _word(self, n, flips):
+        ts = self.first + n // 256
+        if ts >= self.limit:
+            raise MemoryError("more than %d new tiles" % ((self.limit - self.first) * 256))
         return ((n % 256) << 8) | (ts << 2) | flips
 
 
@@ -294,6 +294,43 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     put(cbank, bt_addr, bank_tab)
     put(cbank, ft_addr, frame_ptr)
     put(cbank, ts_addr, ts_entries)
+
+    # win banner: a copy of sprite set 19 (round and win banners, all fighters) whose RAIN WINS frame reads BATMAN WINS
+    text_set = umk3_sprites.SpriteSet(rom4, TEXT_SET)
+    n_text = text_set.frame_count()
+    assert n_text == WIN_FRAME and n_text > 64
+    first_ts = 1 + max((t >> 2) & 63 for f in range(1, n_text + 1) for q in text_set.decode(f)[0] for t in q["tiles"])
+    tstore = TileStore(first_ts, first_ts + 1)
+    banner = np.array(Image.open(os.path.join(REPO, "art", "batman_wins.png")))
+    brec = Pose(banner, tstore, (0, 0)).record(-(banner.shape[1] // 2), -5)
+    tsize = 4 * (first_ts + 1)
+    tbank, taddr = alloc.alloc(16 + 2 + 2 * n_text + tsize)
+    blob, ptrs = bytearray(), bytearray(rom4[text_set.frametab:text_set.frametab + 2 * 64])   # frames 1-64 stay where they are
+    gbank, gaddr = alloc.alloc(len(tstore.tiles) * 32, align=0x20)
+    put(gbank, gaddr, b"".join(tstore.tiles))
+    recs = [bytes(rom4[text_set.frame_offset(f):text_set.frame_offset(f) + text_set.decode(f)[1]]) for f in range(65, n_text)] + [brec]
+    rbank, raddr = alloc.alloc(sum(len(r) for r in recs))
+    for r in recs:
+        ptrs += struct.pack("<H", raddr + len(blob))
+        blob += r
+    put(rbank, raddr, blob)
+    th = bytearray(text_set.header)
+    struct.pack_into("<H", th, 0, taddr + 16)                 # bank table
+    struct.pack_into("<H", th, 2, taddr + 18 + 2 * n_text)    # tileset table
+    th[4] = tbank
+    struct.pack_into("<H", th, 5, taddr + 18)                 # frame pointer table
+    th[7] = tbank
+    put(tbank, taddr, th)
+    put(tbank, taddr + 16, bytes([rom4[text_set.banktab], rbank]))
+    put(tbank, taddr + 18, ptrs)
+    put(tbank, taddr + 18 + 2 * n_text, bytes(rom4[text_set.tileset_tab:text_set.tileset_tab + 4 * first_ts])
+        + struct.pack("<HH", gaddr, 0x2000 | gbank))
+    set_patch = ((umk3_sprites.SET_BANKS + 2 * TEXT_SET, struct.pack("<H", tbank)),
+                 (umk3_sprites.SET_ADDRS + 2 * TEXT_SET, struct.pack("<H", taddr)))
+    for off, data in set_patch:
+        rom[off:off + 2] = data
+        if off & 0x8000:
+            rom[exhirom.ORIG_SIZE + off:exhirom.ORIG_SIZE + off + 2] = data
 
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
