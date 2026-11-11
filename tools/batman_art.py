@@ -2,7 +2,8 @@
 
 Poses come from art/batman_poses.tar.gz (RGBA PNGs ripped from Batman Returns, facing right).
 The fighter palette has index 0 transparent, index 1 black (the game keeps it at $0000) and indexes 2-15 free.
-A fighter owns 64 tiles of video RAM (the round banner text sits right after), so every frame must fit:
+A fighter owns 64 tiles of video RAM (the round banner text sits right after) and a 45-piece buffer in work RAM
+(the banner's buffer sits right after that), so every frame must fit both:
 4 tiles per 16x16 piece plus 1 per 8x8 piece <= 64, in the slot order the engine uses (see slots()).
 """
 import functools
@@ -14,6 +15,7 @@ import numpy as np
 from PIL import Image
 
 MAX_TILES = 64
+MAX_PIECES = 44         # the per-object piece buffer holds 45 (272 bytes); original fighter frames use at most 44
 N_COLOURS = 14          # palette indexes 2..15
 BLACK_INDEX = 1
 
@@ -77,6 +79,29 @@ def palette_words(palette):
     for i, (r, g, b) in enumerate(palette):
         out.append(0 if i < 2 else ((b * 31 // 255) << 10) | ((g * 31 // 255) << 5) | (r * 31 // 255))
     return out
+
+
+def body_anchor(rgba):
+    """(x, y) alignment point of a Batman pose: mean column of the lit body pixels (the dark cape is ignored)
+    and the bottom row."""
+    op = rgba[:, :, 3] > 127
+    lit = op & (rgba[:, :, :3].max(axis=2) > 70)
+    ys, xs = np.nonzero(lit if lit.sum() > 40 else op)
+    return int(round(xs.mean())), int(np.nonzero(op)[0].max())
+
+
+def centre_row(mask):
+    """Mean row of a silhouette (used to align frames whose feet are off the ground)."""
+    return int(round(np.nonzero(mask)[0].mean()))
+
+
+AIRBORNE_BOTTOM = 25      # a ninja frame whose lowest pixel is above this local row is a tucked, mid-air frame
+
+
+def silhouette_anchor(mask):
+    """(x, y) alignment point of a ninja frame: mean column and bottom row of its silhouette."""
+    ys, xs = np.nonzero(mask)
+    return int(round(xs.mean())), int(ys.max())
 
 
 # ---------------------------------------------------------------- piece packing
@@ -240,7 +265,7 @@ def _slots_cached(n16, n8):
 
 
 def fits(n16, n8):
-    if n16 > 16 or 4 * n16 + n8 > MAX_TILES:
+    if n16 > 16 or 4 * n16 + n8 > MAX_TILES or n16 + n8 > MAX_PIECES:
         return False
     s16, s8 = slots(n16, n8)
     used = set()

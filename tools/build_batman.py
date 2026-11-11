@@ -14,7 +14,7 @@ How it works (see tools/umk3_sprites.py for the data format):
   * tools/roster_portrait_patch.py swaps Rain's select-screen portrait; tools/hud_name_patch.py makes the
     health-bar name read BATMAN.
 The frame map says which Batman pose replaces which ninja frame: {"frames": {"131": {"pose": 0, "dx": 0, "dy": 0}}}.
-Each pose is aligned by its feet point to the ninja frame's feet point (art/ninja_frames.json).
+Each pose is aligned to the ninja frame by body centre and bottom row (art/ninja_frames.json).
 """
 import argparse
 import json
@@ -43,14 +43,6 @@ FIRST_NEW_TILESET = 47             # the ninja set uses tilesets 0-46
 MAX_TILESETS = 64
 PORTRAIT_POSE, PORTRAIT_CROP = 0, (26, 0, 50, 36)   # cowl and emblem of the standing pose
 CAP_ORIGIN = (128, 176)            # origin pixel inside the captured ninja frame images
-
-
-def feet_point(mask):
-    """(x of the feet centre, bottom row) of a silhouette: median column of the lowest 8 rows."""
-    ys, xs = np.nonzero(mask)
-    bottom = int(ys.max())
-    low = xs[ys >= bottom - 7]
-    return int(np.median(low)), bottom
 
 
 def tile_bytes(px):
@@ -106,12 +98,13 @@ def cut(idx, x, y, size):
 
 
 class Pose:
-    def __init__(self, idx, store):
+    def __init__(self, idx, store, anchor):
         self.idx = idx
         packed = ba.pack(idx, ba.importance(idx))
         self.lost = packed["lost"]
         self.shown = ba.render(idx, packed)
-        self.feet = feet_point(idx > 0)
+        self.cy = ba.centre_row(idx > 0)
+        self.feet = anchor                     # (x, y) image pixel that is placed on the ninja frame's anchor
         self.pieces = []                       # (x, y, size, [tile words]) in image pixels
         for x, y in packed["p16"]:
             blk = cut(idx, x, y, 16)
@@ -201,7 +194,10 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     def pose(i, flip):
         if (i, flip) not in poses:
             idx = ba.to_indexed(poses_rgba[i], palette)
-            poses[(i, flip)] = Pose(idx[:, ::-1] if flip else idx, store)
+            ax, ay = ba.body_anchor(poses_rgba[i])
+            if flip:
+                idx, ax = idx[:, ::-1], idx.shape[1] - 1 - ax
+            poses[(i, flip)] = Pose(idx, store, (ax, ay))
         return poses[(i, flip)]
 
     # frame records
@@ -213,9 +209,12 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
             records[f] = bytes(rom4[off:off + ninja.decode(f)[1]])
             continue
         p = pose(int(m["pose"]), bool(m.get("flip")))
-        nx, ny = ninja_geom[str(f)]["feet"]                     # ninja feet point in object-local pixels
+        nx, ny = ninja_geom[str(f)]["anchor"]                   # ninja alignment point in object-local pixels
         ox = nx - p.feet[0] + int(m.get("dx", 0))
-        oy = ny - p.feet[1] + int(m.get("dy", 0))
+        if ny < ba.AIRBORNE_BOTTOM:                               # tucked mid-air frame: centre on centre
+            oy = ninja_geom[str(f)]["cy"] - p.cy + int(m.get("dy", 0))
+        else:                                                     # feet (or back) on the same floor line
+            oy = ny - p.feet[1] + int(m.get("dy", 0))
         records[f] = p.record(ox, oy)
 
     rom = exhirom.expand(rom4)
