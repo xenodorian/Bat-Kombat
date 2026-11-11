@@ -81,6 +81,11 @@ seq([167, 168, 169], [AIR_PUNCH, AIR_PUNCH, AIR_PUNCH])                    # div
 seq(range(140, 147), [FRONT_C, FRONT_A, FRONT_B, FRONT_A, FRONT_C, FRONT_B, FRONT_A])   # dizzy sway
 seq(range(134, 140), [51, UPPERCUT, ARMS_UP, ARM_UP, ARM_UP, ARM_UP])      # victory pose
 seq(range(197, 202), [FRONT_A, ARMS_UP, ARMS_UP, ARM_UP, ARM_UP])
+# Batman's special moves (tools/batman_moves_patch.py)
+seq(range(112, 120), [81, 82, 83, 83, 83, 83, 83, 81])                     # Grapple Gun (spear throw frames)
+seq([210, 211, 212, 213], [67, 69, PUNCH, PUNCH])                          # Batarang throw (spit frames)
+seq([208, 209], [68, PUNCH])                                               # Explosive throw (fireball frames)
+seq([242, 243, 244], [PUNCH_WIND, PUNCH, PUNCH_BACK])                      # Cape Charge strike (dash elbow frames)
 
 
 def fallback(mask):

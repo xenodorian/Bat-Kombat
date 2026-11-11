@@ -28,6 +28,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import batman_art as ba
 import exhirom
+import batman_moves_patch
 import hud_name_patch
 import roster_portrait_patch
 import umk3_sprites
@@ -43,6 +44,24 @@ FIRST_NEW_TILESET = 47             # the ninja set uses tilesets 0-46
 MAX_TILESETS = 64
 PORTRAIT_POSE, PORTRAIT_CROP = 0, (26, 0, 50, 36)   # cowl and emblem of the standing pose
 CAP_ORIGIN = (128, 176)            # origin pixel inside the captured ninja frame images
+
+
+# Batarang: the projectile of the "spit" move (ninja frames 257-261) redrawn from poses 41 and 42.
+# It is shown in the projectile's own palette (sprite palette 5 while it flies): index 1 dark steel, 4 mid, 3 white.
+# frame: (pose, x, y) with x, y the object-local top-left corner. BLANK frames (hit splash, drips) show nothing.
+BATARANG = {257: (41, 48, -36), 258: (42, 60, -40), 259: (41, 70, -36), 260: (42, 102, -40), 261: (41, 102, -36)}
+BATARANG.update({f: (41 + f % 2, 108, -36 - 4 * (f % 2)) for f in range(262, 270)})   # the rest of the flight
+BLANK = list(range(270, 275))                                                         # drips at the mouth
+
+
+def effect_index(rgba):
+    """RGBA art -> indexes of the projectile palette, by brightness."""
+    lum = rgba[:, :, :3].astype(float).mean(axis=2)
+    op = rgba[:, :, 3] > 127
+    lo, hi = np.percentile(lum[op], [55, 88])
+    idx = np.where(lum <= lo, 1, np.where(lum <= hi, 4, 3)).astype(np.uint8)
+    idx[~op] = 0
+    return idx
 
 
 def tile_bytes(px):
@@ -217,6 +236,11 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
             oy = ny - p.feet[1] + int(m.get("dy", 0))
         records[f] = p.record(ox, oy)
 
+    for f, (i, x, y) in BATARANG.items():
+        records[f] = Pose(effect_index(poses_rgba[i]), store, (0, 0)).record(x, y)
+    for f in BLANK:
+        records[f] = bytes([1, 0, 0x00, 0, 0]) + struct.pack("<H", store.word(np.zeros((8, 8), np.uint8), False))
+
     rom = exhirom.expand(rom4)
     alloc = exhirom.Allocator()
 
@@ -315,6 +339,7 @@ def main():
     Image.fromarray(poses_rgba[PORTRAIT_POSE]).crop(PORTRAIT_CROP).save(face)
     roster_portrait_patch.patch(rom4, face)
     hud_name_patch.patch(rom4)
+    batman_moves_patch.patch(rom4)
     rom4 = bytes(rom4)
     frame_map = json.load(open(a.map))["frames"]
     report = {}

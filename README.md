@@ -17,10 +17,28 @@ He takes Rain's slot (top-left cell of the fighter select grid).
 - Other fighters are untouched, including the other ninjas that share Rain's sprite set.
 - Stress test: 12,000 frames of random input in one-player and two-player modes without a hang.
 
-## What is still Rain
+## Move list
 
-- Moves, hit boxes, damage, special-move inputs and sounds are Rain's. Batman's poses are fitted to them.
-- Rain's projectiles and effects (frames 250 and up of the ninja set) are unchanged, drawn in Batman's palette.
+Default SNES buttons: Y high punch, B low punch, X high kick, A low kick, L block, R run.
+Directions are for Batman facing right; mirror them when he faces left.
+
+| Move | Input | What it is in the engine |
+|---|---|---|
+| Batarang | Down, Forward, High Punch | Reptile's spit code, projectile redrawn as a batarang |
+| Smoke Teleport | Down, Back, High Punch (also in the air) | Scorpion's teleport punch |
+| Grapple Gun | Back, Back, Low Punch | Scorpion's spear, fired from the grapple gun pose |
+| Explosive | Down, Back, Low Punch | Ermac's fireball |
+| Cape Charge | Back, Forward, Low Kick | Reptile's dash |
+| Spin Kick | Back + High Kick | Rain's roundhouse (unchanged) |
+
+![Batman moves](deliverables/batman_moves.png)
+
+Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents the move table format.
+
+## What is still borrowed
+
+- Normal moves, hit boxes, damage and sounds are Rain's. The specials above are other ninjas' code.
+- The grapple rope, explosive fireball and hit effects use the original art. Only the batarang is redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
 - The game has no move list screen, so none was added.
@@ -50,7 +68,8 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 4. **Limits respected.** A fighter owns 64 tiles of video RAM and a 45-piece buffer. The packer in
    `tools/batman_art.py` keeps every frame inside both, trimming dark cape-edge pixels first when it must.
 5. **Palette.** Rain's 16-colour sprite palette at file `0x3EAFAF` is replaced (14 colours plus black).
-6. **Cosmetics.** `tools/roster_portrait_patch.py` and `tools/hud_name_patch.py`.
+6. **Moves.** `tools/batman_moves_patch.py` writes new special-move tables for fighter 24 in bank `$82`.
+7. **Cosmetics.** `tools/roster_portrait_patch.py` and `tools/hud_name_patch.py`.
 
 ## Workflow for this kind of port
 
@@ -64,7 +83,7 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 
 ## Files
 
-- `tools/build_batman.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
+- `tools/build_batman.py`, `batman_moves_patch.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
 - `tools/umk3_sprites.py`, `capture_set_frames.py`, `record_actions.py`, `review_map.py`, `action_sheet.py`, `dis65.py`: analysis and tests.
 - `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.
 - `art/batman_poses.tar.gz`: 100 Batman poses (a sprite rip of Batman Returns). `art/batman_frame_map.json`, `art/ninja_frames.json`: mapping data.

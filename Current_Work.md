@@ -912,3 +912,28 @@ Not done:
 Free ROM areas in use (first 4 MB): 0x3FDC6E-0x3FDCB6 hook, 0x3FF000-0x3FF6FF roster portrait,
 0x3FF800-0x3FF88A HUD name. Planned: 0x3FE000-0x3FEFFF + banks $60-$6F VS portrait,
 0x3FDD00-0x3FDFFF + banks $70-$77 win banner.
+
+## Step 1 of 4, 2026-11-11: Batman's special moves (done)
+
+Order set by the owner: moves, then move list, then fatalities, then the rest.
+
+How special moves are stored (verified with the debugger on the original ROM):
+- Matcher at $82:D75E walks a table of 21-byte records. Entry point $82:D764 takes the table address in A.
+- One pointer table per button in bank $82, indexed by fighter id * 2: HP $BAC9, LP $BB01, BLOCK $BB39,
+  HK $BB71, LK $BBA9, RUN $BA91. Entries point to stubs "lda #table / jmp $D764". The list of these tables is at $82:BA7F.
+- Record: +0 button offset ($30 HP .. $3A RUN), +2 kind (0 ground, 1 air allowed, 2 fatality, 6/7 other finishers),
+  +4 condition routine, +6 handler, +8 window, +9 six direction bytes newest first (6 U, 7 D, 8 L, 9 R), +15 mirrored copy.
+- Rain's original tables: HP $82:EA93 (orb, a kind-7 finisher, lightning), LK $82:EA7C (stage fatality).
+- Tested by experiment: every male ninja special (Scorpion, Reptile, Ermac, classic Sub-Zero, Noob, Rain) runs
+  correctly on fighter 24. Specials of other body types (Jade, Kano, Kung Lao, Stryker, Kitana) break: wrong
+  animation frames, and Stryker's grenade corrupted the screen. So Batman's moves come from the ninja pool.
+- Projectile objects carry the owner's fighter id, so they are drawn from Batman's sprite set. That is how the
+  batarang replaces the spit frames (257-269) without touching Reptile.
+
+What was built: tools/batman_moves_patch.py (tables), batarang frames and special-move poses in
+tools/build_batman.py and tools/make_frame_map.py. Moves: Batarang, Smoke Teleport, Grapple Gun, Explosive,
+Cape Charge, plus Rain's Spin Kick. Screenshot: deliverables/batman_moves.png.
+Checked: each move fires with its input and does damage; 9,000 frames of random two-player input biased
+toward the special inputs ran without a freeze.
+Not checked: the moves when Batman is player 2, the air version of the teleport, CPU-controlled Batman.
+Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves need the matcher copied to another bank.
