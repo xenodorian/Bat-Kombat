@@ -11,6 +11,8 @@ How it works (see tools/umk3_sprites.py for the data format):
   * A hook in the set lookup ($88:A47A) selects the new header when the object's fighter id ($7E:52C8,y) is 24
     and the set is 27. Everything else in the engine (position, facing, animation, moves, hit boxes) is unchanged.
   * Rain's 16-colour sprite palette (file 0x3EAFAF) is replaced with Batman's.
+  * tools/roster_portrait_patch.py swaps Rain's select-screen portrait; tools/hud_name_patch.py makes the
+    health-bar name read BATMAN.
 The frame map says which Batman pose replaces which ninja frame: {"frames": {"131": {"pose": 0, "dx": 0, "dy": 0}}}.
 Each pose is aligned by its feet point to the ninja frame's feet point (art/ninja_frames.json).
 """
@@ -26,6 +28,8 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import batman_art as ba
 import exhirom
+import hud_name_patch
+import roster_portrait_patch
 import umk3_sprites
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,6 +41,7 @@ HOOK_SITE_BYTES = bytes.fromhex("d9e052f05299e052aabfecea86854cbf24eb86854a")
 HOOK_CODE = 0x3FDC6E               # $FF:DC6E, 0xFF padding in the original
 FIRST_NEW_TILESET = 47             # the ninja set uses tilesets 0-46
 MAX_TILESETS = 64
+PORTRAIT_POSE, PORTRAIT_CROP = 0, (26, 0, 50, 36)   # cowl and emblem of the standing pose
 CAP_ORIGIN = (128, 176)            # origin pixel inside the captured ninja frame images
 
 
@@ -304,10 +309,17 @@ def main():
     ap.add_argument("--poses", default=os.path.join(REPO, "art", "batman_poses.tar.gz"))
     ap.add_argument("--work", default=os.path.join(REPO, "build", "poses"))
     a = ap.parse_args()
-    rom4 = open(a.rom, "rb").read()
+    rom4 = bytearray(open(a.rom, "rb").read())
+    poses_rgba = ba.load_poses(a.poses, a.work)
+    # cosmetics on the original image first: roster portrait (head of the standing pose) and the health-bar name
+    face = os.path.join(a.work, "roster_face.png")
+    Image.fromarray(poses_rgba[PORTRAIT_POSE]).crop(PORTRAIT_CROP).save(face)
+    roster_portrait_patch.patch(rom4, face)
+    hud_name_patch.patch(rom4)
+    rom4 = bytes(rom4)
     frame_map = json.load(open(a.map))["frames"]
     report = {}
-    rom = build(rom4, frame_map, json.load(open(a.ninja)), ba.load_poses(a.poses, a.work), report)
+    rom = build(rom4, frame_map, json.load(open(a.ninja)), poses_rgba, report)
     open(a.out, "wb").write(rom)
     print(json.dumps({k: v for k, v in report.items() if k != "palette"}))
 
