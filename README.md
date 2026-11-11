@@ -1,44 +1,72 @@
 # Bat-Kombat: Batman in Ultimate Mortal Kombat 3 (SNES)
 
-Status: partial. A reskin exists. A real Batman fighter does not.
+Batman, with his sprites from Batman Returns (SNES), is a playable fighter in Ultimate Mortal Kombat 3 (USA).
+He takes Rain's slot (top-left cell of the fighter select grid).
 
-## What exists
-- A patch script that turns Rain (fighter ID 24) into a dark blue-grey "Batman" colour reskin.
-  Same sprites, moves and hit data as Rain. Name table entry changed to "-BATMAN", but the in-fight HUD
-  still shows "RAIN". The roster portrait is still purple.
-- Emulator test tooling, analysis scripts, and a long log of verified and unverified findings.
-- ROMs and the patched ROM are NOT in this repo (commercial dumps, gitignored).
+**Play it:** `release/UMK3_Batman.zip` holds the patched ROM (8 MB, ExHiROM). Tested in snes9x only.
+
+![Batman actions](deliverables/batman_actions.png)
+
+## What works
+
+- Batman is drawn by the game's own sprite engine, so position, facing, scrolling, shadows, hit detection and
+  animation timing are the game's. He works as player 1 and as player 2 (mirrored).
+- 243 of Rain's body frames are replaced by 55 Batman poses: stance, walk, run, crouch, block, jumps, punches,
+  kicks, uppercut, sweep, hit reactions, knockdown, get-up, dizzy and victory.
+- Select screen: Batman portrait in Rain's cell, Batman standee. Health bar name reads BATMAN.
+- Other fighters are untouched, including the other ninjas that share Rain's sprite set.
+- Stress test: 12,000 frames of random input in one-player and two-player modes without a hang.
+
+## What is still Rain
+
+- Moves, hit boxes, damage, special-move inputs and sounds are Rain's. Batman's poses are fitted to them.
+- Rain's projectiles and effects (frames 250 and up of the ninja set) are unchanged, drawn in Batman's palette.
+- Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
+  special moves, fatality frames). Some of those reuse the guard pose.
+- The game has no move list screen, so none was added.
+- See `Current_Work.md` (last section) for the VS-screen portrait and win-banner status.
+
+## Rebuild
+
+Needs Python 3 with numpy and Pillow. The original ROM is in `Ultimate Mortal Kombat 3 (USA).zip`.
+
+```
+unzip "Ultimate Mortal Kombat 3 (USA).zip" -d build/
+python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" build/UMK3_Batman.sfc
+```
+
+To change which pose replaces which frame, edit `EXPLICIT` in `tools/make_frame_map.py`, rerun it (it needs a
+frame capture, see below), then rebuild. `art/batman_frame_map.json` also accepts per-frame `dx`/`dy` nudges and `flip`.
+
+## How it works
+
+1. **Sprite format.** `tools/umk3_sprites.py` documents and decodes the engine's format: a sprite id is
+   `set << 9 | frame`; each set has a header pointing to a frame table, a bank table and a tileset table; a frame
+   record lists 16x16 and 8x8 pieces with positions and tile references; tilesets may be raw 4bpp.
+2. **New set.** `tools/build_batman.py` writes a Batman set with the same frame numbering as set 27 (the male
+   ninja set), using raw tiles, into the free space of an 8 MB ExHiROM image (`tools/exhirom.py`).
+3. **Hook.** The set lookup at `$88:A47A` calls a 72-byte routine at `$FF:DC6E`. When the object's fighter id
+   (`$7E:52C8,y`) is 24 and the set is 27, it loads the Batman header. Nothing else in the engine changes.
+4. **Limits respected.** A fighter owns 64 tiles of video RAM and a 45-piece buffer. The packer in
+   `tools/batman_art.py` keeps every frame inside both, trimming dark cape-edge pixels first when it must.
+5. **Palette.** Rain's 16-colour sprite palette at file `0x3EAFAF` is replaced (14 colours plus black).
+6. **Cosmetics.** `tools/roster_portrait_patch.py` and `tools/hud_name_patch.py`.
+
+## Workflow for this kind of port
+
+1. Get a debugger first (`tools/build_dbg_core.sh` builds a patched snes9x core; `tools/dbg_core.py` wraps it).
+2. Log the ROM reads during one animation step and disassemble the reader (`tools/dis65.py`). That gives the format.
+3. Write an offline decoder and prove it against the running game (`tools/capture_set_frames.py`: 355 of 380 frames match exactly).
+4. Find the engine's limits before drawing anything: tile slots, piece buffers, banner memory.
+5. Build the smallest end-to-end test (every frame = one pose) and look at a screenshot.
+6. Record which frames each action uses (`tools/record_actions.py`), map poses, review side by side (`tools/review_map.py`).
+7. Test both player sides, other fighters, round banners, and a long random-input run (`tools/action_sheet.py`).
 
 ## Files
-- Current_Work.md: full log. Verified facts, corrections to earlier mistakes, agent results, and the plan.
-- Lessons_Learned.md: what went wrong in this project and the rules to avoid repeating it.
-- Data_Needed.md: outside pages I could not read (Cloudflare) and what is needed from them.
-- Issues_Summary.txt: summary of blockers (written when work was stopped once).
-- tools/make_batman_reskin.py: builds the reskin ROM from a clean UMK3 (USA) ROM.
-      python3 tools/make_batman_reskin.py "Ultimate Mortal Kombat 3 (USA).sfc" UMK3_Batman.sfc
-- tools/dump_br_sprites.py: renders Batman's sprite tiles from Batman Returns video memory.
-- tools/umk3rom.py: HiROM address mapping and 65816 disassembly helpers.
-- tools/libretro_harness.py: headless emulator (snes9x libretro core) with button input, frame capture,
-  WRAM/VRAM reads, and RAM pokes (Pro Action Replay style).
-- tools/umk3_nav.py: boots UMK3 to a fight (written by a sub-agent; roster cursor and fight start checked
-  by me only in the sense that it ran to a fight with Rain vs Reptile).
-- tools/br_gameplay.py: boots Batman Returns to Stage 1 (written by a sub-agent, spot-checked).
-- tools/tilesheet.py, scan_id_tables.py, deluxe_diff.py: analysis scripts (scan and diff scripts are
-  agent-written and their reports contained errors; see Current_Work.md).
 
-## Requirements to rerun
-apt: retroarch, libretro-snes9x (for the core file), cc65 optional. pip: capstone, pillow, numpy.
-The harness loads /usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so.
-
-## Key verified facts
-- UMK3 (USA): 4 MB HiROM, file offset = ((bank - 0xC0) << 16) | addr.
-- Fighter ID is in WRAM $52C8 (P1) and mirrored at $36D0. IDs follow the name table at 0x3E544
-  (0 Kano ... 24 Rain). Chameleon is ID 25 per Pro Action Replay codes (unverified here).
-- Rain's sprite palette is two ROM chunks: 0x456E8 (4 words) and 0x3EAFB3 (10 words).
-- The in-fight HUD name is not read from the ASCII name table. The roster portrait palette was not found
-  (palette 13 of the roster screen, ROM 0x3F7C5E, is shared with other portraits; not patched).
-- Batman Returns reaches Stage 1 under script; its sprite data is compressed in ROM, but its art is
-  readable from emulator memory. One clean image of Batman was saved from a frame.
-
-## Not done
-Real Batman sprites, move list, new roster slot, HUD name, portrait recolour, custom special moves.
+- `tools/build_batman.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
+- `tools/umk3_sprites.py`, `capture_set_frames.py`, `record_actions.py`, `review_map.py`, `action_sheet.py`, `dis65.py`: analysis and tests.
+- `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.
+- `art/batman_poses.tar.gz`: 100 Batman poses (a sprite rip of Batman Returns). `art/batman_frame_map.json`, `art/ninja_frames.json`: mapping data.
+- `Current_Work.md`: full history, including earlier approaches that did not work. `ROUTINES_UMK3.md`: earlier routine notes.
+- Superseded, kept for history: `tools/make_batman_fighter.py` (sprite overlay hook), `tools/make_batman_reskin.py` (palette swap), `NEXT.md`.

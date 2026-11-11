@@ -886,3 +886,29 @@ the count-and-hide walk plus the 16 stores, still crossing out of vblank.
 One frame goes darker when the pose actually changes, because that frame
 does the 2 KB upload.
 
+
+## Status, 2026-11-11: native Batman sprite set (current approach)
+
+This replaces the OAM overlay hook described above. See README.md for the full description.
+
+Built and verified in snes9x (screenshots in deliverables/):
+- Batman is drawn by the game's own sprite engine for fighter id 24 (Rain) only. Hook at $88:A47A -> $FF:DC6E
+  swaps the set header when set 27 is requested by a Rain object. Data lives in banks $40-$44 of an 8 MB ExHiROM image.
+- 243 ninja body frames mapped to 55 Batman poses. Works as P1 and P2. Other ninjas unaffected.
+- Roster portrait and health-bar name are Batman. ROUND/FIGHT banners intact.
+- 12,000 frames of random input in 1P and 2P without a hang.
+- Release ROM: release/UMK3_Batman.zip.
+
+Not done:
+- VS-screen large portrait is still Rain. A sub-agent captured the VS screen buffers
+  (portrait gfx buffer at WRAM $B300, tile maps at $6300) but did not finish a patch.
+- Win banner still reads RAIN WINS. A sub-agent located the name sprites (set 19) and had one test ROM working
+  for a single frame, but did not finish or hand over a patch. Unverified by me.
+- Moves, hit boxes, special inputs, projectiles and sounds are Rain's. No Batman-specific moves.
+- No move list screen (the game has none).
+- Mirror-match alternate palette not checked. Not tested on hardware or in bsnes/Mesen.
+- Rare frames (other ninjas' specials, fatalities) use shape-matched fallback poses.
+
+Free ROM areas in use (first 4 MB): 0x3FDC6E-0x3FDCB6 hook, 0x3FF000-0x3FF6FF roster portrait,
+0x3FF800-0x3FF88A HUD name. Planned: 0x3FE000-0x3FEFFF + banks $60-$6F VS portrait,
+0x3FDD00-0x3FDFFF + banks $70-$77 win banner.
