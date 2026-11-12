@@ -33,11 +33,13 @@ import hud_name_patch
 import move_list_patch
 import roster_portrait_patch
 import umk3_sprites
+import vs_portrait
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NINJA_SET = 27
 RAIN_ID = 24
 RAIN_PALETTE = 0x3EAFAF            # 16 colour words, used only by Rain
+RAIN_ALT_PALETTE = 0x08C4AD       # Rain's palette as player 2 in a mirror match
 HOOK_SITE = 0x08A47A               # $88:A47A  cmp $52E0,y / beq / sta $52E0,y / tax / two table loads
 HOOK_SITE_BYTES = bytes.fromhex("d9e052f05299e052aabfecea86854cbf24eb86854a")
 HOOK_CODE = 0x3FDC6E               # $FF:DC6E, 0xFF padding in the original
@@ -332,6 +334,9 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
         if off & 0x8000:
             rom[exhirom.ORIG_SIZE + off:exhirom.ORIG_SIZE + off + 2] = data
 
+    # large portrait on the VS screen
+    vs_info = vs_portrait.build(rom, alloc, put, poses_rgba, os.environ.get("VS_PREVIEW"))
+
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
     code = hook_code(cbank, h_addr)
@@ -345,14 +350,25 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     # palette
     rom[RAIN_PALETTE:RAIN_PALETTE + 32] = struct.pack("<16H", *ba.palette_words(palette))
 
+    # mirror match: player 2 gets a lighter steel-grey suit instead of Rain's alternate purple
+    assert rom4[RAIN_ALT_PALETTE:RAIN_ALT_PALETTE + 6] == bytes.fromhex("000000004930"), "unexpected alternate palette"
+    alt = []
+    for r, g, b in palette:
+        if r > b + 30:                                       # belt and emblem stay yellow
+            alt.append((r, g, b))
+        else:
+            lum = 0.3 * r + 0.59 * g + 0.11 * b
+            alt.append((min(255, int(lum * 1.15 + 28)), min(255, int(lum * 1.15 + 30)), min(255, int(lum * 1.2 + 44))))
+    rom[RAIN_ALT_PALETTE:RAIN_ALT_PALETTE + 32] = struct.pack("<16H", *ba.palette_words(alt))
+
     # the bank-$00-$3F mirror of the patched areas must match (vectors and slow-bank reads)
-    for off, ln in ((HOOK_SITE, len(HOOK_SITE_BYTES)), (HOOK_CODE, len(code)), (RAIN_PALETTE, 32)):
+    for off, ln in ((HOOK_SITE, len(HOOK_SITE_BYTES)), (HOOK_CODE, len(code)), (RAIN_PALETTE, 32), (RAIN_ALT_PALETTE, 32)):
         if off & 0x8000:
             rom[exhirom.ORIG_SIZE + off:exhirom.ORIG_SIZE + off + ln] = rom[off:off + ln]
     exhirom.fix_checksum(rom)
 
     if report is not None:
-        report.update(tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
+        report.update(vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
                       mapped_frames=len(frame_map), header="%02X:%04X" % (cbank, h_addr),
                       last_bank="%02X" % alloc.bank, palette=palette,
                       lost={"%d%s" % (i, "f" if fl else ""): p.lost for (i, fl), p in poses.items() if p.lost},

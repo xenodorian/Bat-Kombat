@@ -979,3 +979,19 @@ Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves 
   tileset, and repoints set 19 in the set table ($86:EAEC / $86:EB24, index 19). All fighters use the copy.
 - Checked: BATMAN WINS shows after a round win; ROUND 1 and FLAWLESS VICTORY still draw. Screenshot: deliverables/batman_wins.png.
 - Not checked: every other fighter's win banner (frames 65-97 were copied byte for byte, 1-64 are untouched).
+
+## Step 4, 2026-11-12. Part B: VS portrait, mirror palette, P2 and 1P checks (done)
+
+- VS screen portrait format and loader: see the docstring of tools/vs_portrait.py (tables at $83:EEFA etc,
+  48-byte 6-bit tiles stored mirrored, 16 x 22 cell map, 64-colour palette plus a mirror-match palette).
+  Batman's data is raw in bank $45; a 30-byte loader at $FF:E400 copies it when the source bank is $45 and calls
+  the game's decompressor ($88:AD30) otherwise. Tile limit 245: with 263 tiles the BATTLE header was overwritten.
+- Mirror match: Rain's player-2 palette is at file 0x08C4AD. It is replaced by a lighter steel-grey Batman.
+- Checked on the build in release/: Batman as player 2 (portrait mirrored, batarang, grapple gun and teleport
+  with mirrored inputs), Batman vs Batman, one-player ladder vs CPU Scorpion through a loss and the continue
+  screen, 12,000 frames random input two-player and 9,500 one-player without a freeze.
+  Screenshots: deliverables/batman_vs_screen.png, batman_mirror_match.png.
+- Found, not fixed yet: the move list screen shows before every round, not only the first (240 frames each).
+  Round wins: $7E:36E0 (P1), $7E:38A4 (P2). See PLAN.md step A.
+- The test rig scripts are now in tools/rig/ (lab.py, exp.py, fat.py).
+- PLAN.md is the handoff and work plan from here on.

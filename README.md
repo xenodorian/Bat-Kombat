@@ -14,6 +14,7 @@ He takes Rain's slot (top-left cell of the fighter select grid).
 - 243 of Rain's body frames are replaced by 55 Batman poses: stance, walk, run, crouch, block, jumps, punches,
   kicks, uppercut, sweep, hit reactions, knockdown, get-up, dizzy and victory.
 - Select screen: Batman portrait in Rain's cell, Batman standee. Health bar name reads BATMAN. The win banner reads BATMAN WINS.
+- VS screen: Batman portrait. Mirror match: player 2 is a steel-grey Batman.
 - Other fighters are untouched, including the other ninjas that share Rain's sprite set.
 - Stress test: 12,000 frames of random input in one-player and two-player modes without a hang.
 
@@ -53,7 +54,7 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
 - The grapple rope, explosive fireball and hit effects use the original art. Only the batarang is redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
-- The large portrait on the VS screen is still Rain.
+- Sounds are Rain's. CPU-controlled Batman is not checked. See `PLAN.md` for what is left and how to continue.
 
 ## Rebuild
 
@@ -98,5 +99,7 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 - `tools/umk3_sprites.py`, `capture_set_frames.py`, `record_actions.py`, `review_map.py`, `action_sheet.py`, `dis65.py`: analysis and tests.
 - `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.
 - `art/batman_poses.tar.gz`: 100 Batman poses (a sprite rip of Batman Returns). `art/batman_frame_map.json`, `art/ninja_frames.json`: mapping data.
+- `PLAN.md`: work plan and handoff. `tools/rig/`: emulator test rig (fight state, move filming, finisher filming).
+- `tools/vs_portrait.py`, `make_win_banner.py`: VS screen portrait and win banner.
 - `Current_Work.md`: full history, including earlier approaches that did not work. `ROUTINES_UMK3.md`: earlier routine notes.
 - Superseded, kept for history: `tools/make_batman_fighter.py` (sprite overlay hook), `tools/make_batman_reskin.py` (palette swap), `NEXT.md`.
