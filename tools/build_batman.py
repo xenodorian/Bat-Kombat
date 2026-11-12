@@ -46,6 +46,7 @@ HOOK_CODE = 0x3FDC6E               # $FF:DC6E, 0xFF padding in the original
 FIRST_NEW_TILESET = 47             # the ninja set uses tilesets 0-46
 MAX_TILESETS = 64
 PORTRAIT_POSE, PORTRAIT_CROP = 0, (26, 0, 50, 36)   # cowl and emblem of the standing pose
+NAME_TABLE, NAME_AT = 0x03E544, 0x03FF90    # name pointer table (bank $83) and free bytes for the new name
 TEXT_SET, WIN_FRAME = 19, 98        # sprite set of the banners; frame 98 is RAIN WINS
 CAP_ORIGIN = (128, 176)            # origin pixel inside the captured ninja frame images
 
@@ -414,6 +415,12 @@ def main():
     hud_name_patch.patch(rom4)
     batman_moves_patch.patch(rom4)
     move_list_patch.patch(rom4)
+    # name string used by text screens (the tournament ladder among them): "-RAIN" -> "-BATMAN"
+    ptr = NAME_TABLE + 2 * 24
+    old = 0x030000 | rom4[ptr] | rom4[ptr + 1] << 8
+    assert rom4[old:old + 6] == b"-RAIN\0" and all(b == 0xFF for b in rom4[NAME_AT:NAME_AT + 8])
+    rom4[NAME_AT:NAME_AT + 8] = b"-BATMAN\0"
+    struct.pack_into("<H", rom4, ptr, NAME_AT & 0xFFFF)
     rom4 = bytes(rom4)
     frame_map = json.load(open(a.map))["frames"]
     report = {}

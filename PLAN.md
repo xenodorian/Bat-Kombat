@@ -68,7 +68,8 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
 | E | Sounds | Rain's |
 | F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12 (Batman stands still under the banner); texts not located |
-| G | Other emulators and real hardware | not checked |
+| G | Other emulators and real hardware | bsnes-mercury accuracy core checked 2026-11-12 (boot to specials, all fine); hardware and Mesen not checked |
+| H | Small face on the one-player tower ("Choose your destiny") | still Rain's masked face; format not looked at |
 
 ## Steps, in order
 
@@ -164,6 +165,13 @@ been looked at. Skip unless the owner asks.
   the hook timing, the VS screen.
 - Stage fatality on a pit stage, friendship off, every other fighter's win banner (set 19 frames 65 to 97
   were copied), one-player ladder to the end.
+
+### H. Tower portrait
+
+In a one-player game the tower screen shows a small face for the player at the foot of the tower. For
+fighter 24 it is still the purple ninja face. `tools/roster_portrait_patch.py` only covers the select grid.
+Find it the same way as the VS portrait: watch which ROM data is read while the tower screen loads with
+fighter 24 versus another fighter (`tools/dbg_core.py`, `watch_read`), then decode and replace.
 
 ## Known limits that are by design
 

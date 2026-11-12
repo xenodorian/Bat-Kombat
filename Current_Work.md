@@ -1031,3 +1031,14 @@ the spread-cape glide pose 96. Smoke Teleport reads as Batman diving across and 
 starts with the dive pose and then goes to the air punch pose. Screenshot: deliverables/batman_glide.png
 (rows: ground teleport, jump punch, air teleport). 10,000 frames of random input with specials: no freeze.
 A glide held from a normal jump, as in Batman Returns, would need new movement code; not attempted.
+
+## 2026-11-12: second emulator, name string, tower face
+
+- bsnes-mercury accuracy core (apt package libretro-bsnes-mercury-accuracy, script tools/rig/bsnes_check.py):
+  the release ROM boots, shows the roster, the VS screen with Batman's portrait, the move list, ROUND 1, and the
+  batarang, grapple gun with the new hook, teleport and explosive all fire. Sheet: deliverables/batman_bsnes_check.png.
+  The core outputs 512-wide frames; the script halves them so tools/umk3_nav.py can read the cursor.
+- The name pointer table entry for fighter 24 (file 0x3E544 + 48) now points to "-BATMAN" at file 0x3FF90.
+  Where the game prints that string was not found; nothing visible changed in the screens filmed.
+- New finding: the one-player tower screen shows a small face for the player. For fighter 24 it is still the
+  purple ninja face. Open, PLAN.md item H.
