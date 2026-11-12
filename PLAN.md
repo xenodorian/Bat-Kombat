@@ -95,11 +95,17 @@ Batman Returns (SNES) move set, and what covers it now:
 | Cape glide | none | B1 |
 | Grab, head slam, throw | Rain's throw with fallback poses | B2 |
 
-- **B1 Glide.** Candidates from the ninja pool: the air version of the teleport punch (kind 1 record, already
+- **B1 Glide.** Checked 2026-11-12: the air version of Smoke Teleport fires from a jump (frames 73, 41, 171, 172).
+  Frame 41 is also the jump punch, so it cannot simply become a glide pose. A real glide needs its own frames:
+  give the air teleport a private frame by pointing its animation at an unused set-27 frame, or leave as is.
+  Original notes: Candidates from the ninja pool: the air version of the teleport punch (kind 1 record, already
   allowed in the air, not yet filmed), Scorpion's air throw (BLOCK table stub `$82:BCB3`, complex stub, read it
   first). Simplest honest version: map the air teleport frames 41 and 171 to glide poses 95, 96, 97 and 34 and
   name it Glide Strike. Film it from a jump: `("U" then "DL" + Y)`.
-- **B2 Throw.** Record which frames Rain's throw uses (`tools/record_actions.py`, add a close-range forward +
+- **B2 Throw.** Checked 2026-11-12: forward + low punch at close range works. Rain's throw is a back roll,
+  frames 26, 27, 28, 29, 30, 31, 33, then 172. Current poses: 12, 78, 78, 61, 65, 61, 62 (26 to 28 are shape
+  fallbacks). It reads as a roll throw already. Possible polish: 26 -> pose 73 (grab), 27 and 28 -> pose 62.
+  Original notes: Record which frames Rain's throw uses (`tools/record_actions.py`, add a close-range forward +
   low punch action with P2 adjacent), then map them in `EXPLICIT` in `tools/make_frame_map.py` to poses 73, 74
   (grab) and 92 to 94. The opponent's thrown frames are the opponent's own, nothing to do there.
 - **B3 More specials if wanted.** Tested and working on fighter 24, not yet assigned: Reptile force ball slow
