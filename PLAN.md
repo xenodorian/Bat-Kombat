@@ -57,12 +57,12 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | 1 | Batman drawn by the engine, P1 and P2 | done |
 | 2 | Roster portrait, health-bar name | done |
 | 3 | Specials: Batarang, Smoke Teleport, Grapple Gun, Explosive, Cape Charge, Spin Kick | done |
-| 4 | Move list screen before the fight | done, but see step A |
+| 4 | Move list screen before round 1 | done |
 | 5 | Two fatalities, babality, stage fatality | done (stage fatality and babality are Rain's, babality checked, stage fatality not checked) |
 | 6 | BATMAN WINS banner | done |
 | 7 | VS screen portrait | done |
 | 8 | Mirror match palette | done |
-| A | Move list shows again before every round | open |
+| A | Move list shows again before every round | fixed 2026-11-12 (241 frames before round 1, 0 before round 2) |
 | B | Batman Returns moves not yet in: glide, throw, combos | open |
 | C | Effect art still the ninjas': grapple hook and rope, explosive, teleport flame, blood on batarang | open |
 | D | CPU-controlled Batman | not checked |

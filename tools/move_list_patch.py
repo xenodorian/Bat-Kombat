@@ -5,7 +5,8 @@ fight when a kombat kode is active (routine at $85:E805). It prints one centred 
 the text routine at $88:90F8 (A = string address, X = string bank, Y = screen row in pixels), 12 pixels apart,
 and stays for 240 frames.
 
-This patch makes that screen also appear when either fighter is Batman (fighter id 24 at $7E:52C8 or $7E:52CA)
+The routine runs before every round. This patch makes that screen also appear before round 1 (both round-win
+counters $7E:36E0 and $7E:38A4 zero) when either fighter is Batman (fighter id 24 at $7E:52C8 or $7E:52CA)
 and adds the move list lines to it. Two jumps are patched:
   $85:E834  jml $88C7CC (leave, no kode active)   -> jml CHECK
   $85:E8E4  lda $3C0E / beq $E91E (after the kode lines) -> jml PRINT
@@ -78,20 +79,23 @@ def code(base_addr):
     a = Asm(base_addr)
     bank = base_addr >> 16
 
-    def has_batman(yes):
+    def has_batman(yes, no):
+        a.b(0xAD, 0xE0, 0x36, 0x0D, 0xA4, 0x38)          # lda $36E0 / ora $38A4: round wins, zero before round 1
+        a.branch(0xD0, no)
         a.b(0xAD, 0xC8, 0x52, 0xC9, FIGHTER, 0x00)       # lda $52C8 / cmp #24
         a.branch(0xF0, yes)
         a.b(0xAD, 0xCA, 0x52, 0xC9, FIGHTER, 0x00)       # lda $52CA / cmp #24
         a.branch(0xF0, yes)
 
     a.label("check")
-    has_batman("show")
+    has_batman("show", "leave")
+    a.label("leave")
     a.jml(0x88C7CC)
     a.label("show")
     a.jml(0x85E838)
 
     a.label("print")
-    has_batman("go")
+    has_batman("go", "tail")
     a.branch(0x80, "tail")
     a.label("go")
     a.b(0xA2, 0x00, 0x00)                                # ldx #0

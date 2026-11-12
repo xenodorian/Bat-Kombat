@@ -995,3 +995,8 @@ Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves 
   Round wins: $7E:36E0 (P1), $7E:38A4 (P2). See PLAN.md step A.
 - The test rig scripts are now in tools/rig/ (lab.py, exp.py, fat.py).
 - PLAN.md is the handoff and work plan from here on.
+
+## 2026-11-12: PLAN step A done
+
+The move list now shows only before round 1 (round-win counters $7E:36E0 and $7E:38A4 both zero).
+Measured: 241 frames before round 1, 0 before round 2. Not checked: a match with a kombat kode active.
