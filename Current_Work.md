@@ -1123,3 +1123,12 @@ Checked: stream voice keys on and Batman's sample bytes reach sound RAM for his 
 when he is hit; Mileena vs Noob never takes the Batman branch (override never set in 6,000 frames).
 Recordings: deliverables/batman_sounds_before.wav and batman_sounds_after.wav (same input sequence).
 Not checked: how it sounds to a person; the pitches chosen for samples 8 and 18 are a judgement call.
+
+## 2026-11-13: Batarang throw animation from Batman Returns
+
+Owner noticed the Batarang used a punch pose. Filmed the throw in Batman Returns (button A, every 2 frames):
+stance, arm raised behind the head, lean forward, low lunge with the cape trailing (held while the batarang
+leaves), then stance. Matched by eye to the sprite rip: poses 74, 73, 80. tools/make_frame_map.py now maps the
+spit frames 210-213 to [74, 73, 80, 80] (was [67, 69, punch, punch]). Comparison image (BR on top, UMK3 below):
+deliverables/batman_batarang_throw.png. Liveness checked on seeds 1 and 4.
+UMK3 timing is the spit move's: the lunge is held until the move ends, and frames 211 and 210 play on recovery.

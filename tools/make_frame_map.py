@@ -83,7 +83,7 @@ seq(range(134, 140), [51, UPPERCUT, ARMS_UP, ARM_UP, ARM_UP, ARM_UP])      # vic
 seq(range(197, 202), [FRONT_A, ARMS_UP, ARMS_UP, ARM_UP, ARM_UP])
 # Batman's special moves (tools/batman_moves_patch.py)
 seq(range(112, 120), [81, 82, 83, 83, 83, 83, 83, 81])                     # Grapple Gun (spear throw frames)
-seq([210, 211, 212, 213], [67, 69, PUNCH, PUNCH])                          # Batarang throw (spit frames)
+seq([210, 211, 212, 213], [74, 73, 80, 80])                                 # Batarang throw as in Batman Returns: arm back, lean, lunge
 seq([208, 209], [68, PUNCH])                                               # Explosive throw (fireball frames)
 seq([242, 243, 244], [PUNCH_WIND, PUNCH, PUNCH_BACK])                      # Cape Charge strike (dash elbow frames)
 seq([1, 2, 3, 4, 5, 6, 7, 8, 9], [BLOCK, BLOCK, PUNCH, PUNCH, PUNCH_WIND, PUNCH_WIND, PUNCH, ARM_UP, HIT_BACK])   # reach and grab
