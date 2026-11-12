@@ -1042,3 +1042,17 @@ A glide held from a normal jump, as in Batman Returns, would need new movement c
   Where the game prints that string was not found; nothing visible changed in the screens filmed.
 - New finding: the one-player tower screen shows a small face for the player. For fighter 24 it is still the
   purple ninja face. Open, PLAN.md item H.
+
+## 2026-11-12: tower face (PLAN H) and a second portrait screen
+
+- Tower faces: $86:DD69 decompresses a sheet of all 32 x 48 faces from $C3:0000 to $7F:6300; $86:9823 then sets
+  bitplane 7 so the faces use colours 128-255. Face k = 24 8bpp tiles, 4 x 6 row-major, at $7F:6340 + k * $600;
+  Rain is k = 23 ($7F:ED40). The tower palette holds the roster portrait palette at colours 129-223, so the
+  roster face is reused with every index + 80. tools/tower_face_patch.py hooks $86:DD83 and copies Batman's face
+  from $FF:E500 over entry 23. Found by diffing video RAM on the tower between Rain and Mileena (24 tiles at
+  VRAM $3440), then searching work RAM for those bytes. Checked: Batman's tower shows his face, Mileena's tower is
+  unchanged, the roster and a two-player fight still work. Screenshot: deliverables/batman_tower_face.png.
+- Second reader of the VS portrait tables: code at $87:F97E to $87:FA1A reads $83:EEFA/EF2E/EF62 with the
+  fighter id in $7E:3AD0 and calls the decompressor at $87:F996 and $87:F9DF. Those two calls now go through the
+  same raw-data loader as the VS screen, so this screen cannot decompress Batman's raw data as garbage.
+  Which screen it is was not found (an exec watch during the one-player path never hit). Not tested.

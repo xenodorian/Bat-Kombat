@@ -47,7 +47,8 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | Health | `$7E:36D4` (P1), `$7E:3898` (P2) |
 | Round wins | `$7E:36E0` (P1), `$7E:38A4` (P2). Seen 0 -> 1 after one round win. Not yet used. |
 | Round number (candidates) | `$7E:3A90` or `$7E:3ACA`, both went 1 -> 2. Not yet told apart. |
-| Free space left in bank `$FF` | `0x3FDCB7-0x3FDCFF`, after the move list (`about 0x3FDE80`) to `0x3FDFFF`, `0x3FE200` to `0x3FE3FF` (check), `0x3FE440-0x3FEFFF` |
+| Tower face hook and data | `$FF:E480` code, `$FF:E500-$EAFF` face tiles, hook at `$86:DD83` |
+| Free space left in bank `$FF` | `0x3FDCB7-0x3FDCFF`, after the move list (`about 0x3FDE80`) to `0x3FDFFF`, `0x3FE200` to `0x3FE3FF` (check), `0x3FE440-0x3FE47F`, `0x3FEB00-0x3FEFFF` |
 | Free space in bank `$82` | `$82:FF0B-$FF70`, `$82:EA80-$EAD3` |
 
 ## Status
@@ -69,7 +70,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | E | Sounds | Rain's |
 | F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12 (Batman stands still under the banner); texts not located |
 | G | Other emulators and real hardware | bsnes-mercury accuracy core checked 2026-11-12 (boot to specials, all fine); hardware and Mesen not checked |
-| H | Small face on the one-player tower ("Choose your destiny") | still Rain's masked face; format not looked at |
+| H | Small face on the one-player tower ("Choose your destiny") | done 2026-11-12 (tools/tower_face_patch.py) |
 
 ## Steps, in order
 

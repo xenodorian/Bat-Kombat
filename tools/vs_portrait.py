@@ -25,7 +25,8 @@ import exhirom
 from move_list_patch import Asm
 
 T_GFX, T_MAP, T_PAL, T_BANK, T_COUNT, T_MIRROR = 0x03EEFA, 0x03EF2E, 0x03EF62, 0x03EEC6, 0x03EE92, 0x03EFE6
-CALL_SITES = (0x03E754, 0x03E77E, 0x03E822)          # jsl $88AD30
+CALL_SITES = (0x03E754, 0x03E77E, 0x03E822,          # jsl $88AD30 in the VS screen loader ($83:E6D5)
+              0x07F996, 0x07F9DF)                    # and in a second portrait screen at $87:F97E (fighter id in $7E:3AD0)
 CODE_AT = 0x3FE400                                   # $FF:E400, 0xFF padding in the original
 FIGHTER = 24
 COLS, ROWS = 16, 22

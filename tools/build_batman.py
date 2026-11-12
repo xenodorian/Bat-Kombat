@@ -31,6 +31,7 @@ import exhirom
 import batman_moves_patch
 import hud_name_patch
 import move_list_patch
+import tower_face_patch
 import roster_portrait_patch
 import umk3_sprites
 import vs_portrait
@@ -412,6 +413,7 @@ def main():
     face = os.path.join(a.work, "roster_face.png")
     Image.fromarray(poses_rgba[PORTRAIT_POSE]).crop(PORTRAIT_CROP).save(face)
     roster_portrait_patch.patch(rom4, face)
+    tower_face_patch.patch(rom4, face)
     hud_name_patch.patch(rom4)
     batman_moves_patch.patch(rom4)
     move_list_patch.patch(rom4)
