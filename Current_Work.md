@@ -1023,3 +1023,11 @@ Measured: 241 frames before round 1, 0 before round 2. Not checked: a match with
 - Rechecked on this build: all five specials, both fatalities (FATALITY banner seen), move list (11 lines,
   241 frames before round 1), 10,000 frames of random two-player input.
 - Throw (PLAN B2) left as it is: it already reads as a roll throw.
+
+## 2026-11-12: glide poses (PLAN B1)
+
+Frames 41 and 171 (teleport flight, also the first frame of the jump punch) now use the cape dive pose 34 and
+the spread-cape glide pose 96. Smoke Teleport reads as Batman diving across and gliding down. The jump punch
+starts with the dive pose and then goes to the air punch pose. Screenshot: deliverables/batman_glide.png
+(rows: ground teleport, jump punch, air teleport). 10,000 frames of random input with specials: no freeze.
+A glide held from a normal jump, as in Batman Returns, would need new movement code; not attempted.

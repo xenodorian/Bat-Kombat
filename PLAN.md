@@ -63,7 +63,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | 7 | VS screen portrait | done |
 | 8 | Mirror match palette | done |
 | A | Move list shows again before every round | fixed 2026-11-12 (241 frames before round 1, 0 before round 2) |
-| B | Batman Returns moves not yet in: glide, throw, combos | open |
+| B | Batman Returns moves not yet in: glide, throw, combos | glide poses on the teleport flight done 2026-11-12; a held glide from a jump is not possible without new code; throw left as is |
 | C | Effect art | C1 grapple hook done 2026-11-12; C2 explosive (shared set 16, needs a second hook) open |
 | D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
 | E | Sounds | Rain's |
