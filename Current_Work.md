@@ -1132,3 +1132,24 @@ leaves), then stance. Matched by eye to the sprite rip: poses 74, 73, 80. tools/
 spit frames 210-213 to [74, 73, 80, 80] (was [67, 69, punch, punch]). Comparison image (BR on top, UMK3 below):
 deliverables/batman_batarang_throw.png. Liveness checked on seeds 1 and 4.
 UMK3 timing is the spit move's: the lunge is held until the move ends, and frames 211 and 210 play on recovery.
+
+## 2026-11-13: all animations checked against Batman Returns
+
+Method (tools/rig): run Batman Returns with background layers off (sprites_only.py, snes9x core options), and match
+each frame against the 100 rip poses (br_pose_match.py, exact sprites, clean frames score about 1.0). br_actions.py
+plays every control. Measured Batman Returns animations (pose x frames held):
+- idle 1; after an action 2, 3, 1.             - walk 6, 7, 8, 10, 11, 9 (8 frames each)
+- punch 14 x2, 13 x4, 14 x2 (Up+Y, Y+A, crouch+Y give the same punch)
+- jump 27 x5, 24 x23, 50 x4, 23 x13, 24 x3; forward jump uses 30 instead of 24; jump attack (B then Y) 26, 25 x12
+- batarang (A) 38 x3, 39 x2, 40 x5, 39 x4 (the eyeballed 74, 73, 80 of the previous commit were wrong)
+- block (L or R held) 63 x3, then 64.           - cape spin (B+Y) 93-99 mirrored, 5-6 frames each
+- hit 59 x24; knockdown 60, 65, 61, 62, then 2, 3, 1 (the spin in the air has no matching rip pose)
+- Up/Down walk in depth: there is no crouch. X and SELECT do nothing. No ground kick was found.
+
+Changed in tools/make_frame_map.py (block "Batman Returns animations"): walk, both punches, jump take-off, straight
+and forward jumps, jump kicks and jump punch, block, Batarang, hit reactions, falls, knockdown and get-up, and the
+Cape Charge strike (BR cape spin, mirrored; frame_map supports "flip"). Unchanged because Batman Returns has no
+counterpart: crouch and crouch attacks, ground kicks, sweep, uppercut, run, dizzy, victory, throws.
+Note: frame 41 (jump punch start) is shared with the Smoke Teleport flight, so the teleport now starts with pose 26.
+Checked on screen: deliverables/batman_animations_check.png (walk, punch, jump, forward jump, jump kick, block,
+batarang, cape charge) and batman_knockdown.png (hit by Noob's uppercut). Liveness seeds 1, 4, 6 alive.

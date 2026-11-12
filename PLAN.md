@@ -66,7 +66,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | 7 | VS screen portrait | done |
 | 8 | Mirror match palette | done |
 | A | Move list shows again before every round | fixed 2026-11-12 (241 frames before round 1, 0 before round 2) |
-| B | Batman Returns moves; pose review | 2026-11-12: 29 more frames mapped by hand (217 explicit, 26 by shape left: crouch variants, weapon frames 234-241, lying frames); throw now grab, roll, kick off. Earlier: | glide poses on the teleport flight done 2026-11-12; a held glide from a jump is not possible without new code; throw left as is |
+| B | Batman Returns moves; pose review (2026-11-13: every BR animation measured and applied where UMK3 has a counterpart, see Current_Work.md) | 2026-11-12: 29 more frames mapped by hand (217 explicit, 26 by shape left: crouch variants, weapon frames 234-241, lying frames); throw now grab, roll, kick off. Earlier: | glide poses on the teleport flight done 2026-11-12; a held glide from a jump is not possible without new code; throw left as is |
 | C | Effect art | C1 grapple hook and C2 explosive vial done 2026-11-12; the blast and rope are still the originals |
 | D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
 | E | Sounds | done 2026-11-13: Batman Returns swing, impact and batarang samples for Batman only; Rain's voice silenced (tools/batman_sound_patch.py) |

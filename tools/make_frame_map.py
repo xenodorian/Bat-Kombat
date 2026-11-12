@@ -92,7 +92,33 @@ seq([59, 60, 61, 62], [PUNCH_BACK, PUNCH_BACK, PUNCH, PUNCH])              # pun
 seq([93, 103, 104], [HIT_BACK, PUNCH, PUNCH])
 seq([159, 162, 163, 165], [FALLING, FALLING, FALLING, CROUCH_BLOCK])       # tumbling, upside down
 seq([178, 179, 206, 207, 224, 227], [ARMS_UP, ARMS_UP, KNEE, KNEE, HIT_GUT, CROUCH])
-seq([41, 171], [34, 96])                                                   # Smoke Teleport flight: cape dive, then glide down
+seq([41, 171], [34, 96])
+
+# --- Batman Returns animations, measured 2026-11-13 ---------------------------------------------------------
+# Each Batman Returns action was played with the backgrounds switched off and every frame matched against the
+# 100 rip poses (exact sprites, match score about 1.0). Sequences (pose x frames held):
+#   idle 1; settle after an action 2, 3, 1          walk 6, 7, 8, 10, 11, 9 (8 frames each)
+#   punch 14 x2, 13 x4, 14 x2                       jump 27 x5, 24 x23, 50 x4, 23 x13, 24 x3
+#   forward jump 27, 30 x23, 50, 23, 24             jump attack 26 x4, 25 x12, 26 x3
+#   batarang 38 x3, 39 x2, 40 x5, 39 x4             block (L or R) 63 x3, 64 held
+#   cape spin (B+Y) 93-99 mirrored, 5-6 each       hit 59 x24
+#   knockdown 60, 65, 61, 62 then 2, 3, 1           no crouch, no ground kick (Up/Down move in depth)
+# UMK3 actions with a Batman Returns counterpart now use it:
+seq(range(181, 189), [6, 7, 8, 8, 10, 11, 9, 9])                           # walk, BR order resampled to 8 frames
+seq([56, 57, 58], [14, 13, 14])                                            # high punch
+seq([99, 100, 101], [14, 13, 14])                                          # low punch
+seq([34, 73, 72], [27, 24, 24])                                            # jump take-off, straight jump, landing
+seq(range(63, 70), [30, 30, 30, 50, 23, 23, 24])                           # forward and back jump
+seq([39, 40, 70, 71, 41, 42], [26, 25, 26, 25, 26, 25])                    # jump kicks and jump punch
+seq([10, 11], [63, 64])                                                    # block
+seq([210, 211, 212, 213], [38, 39, 40, 40])                                # Batarang throw
+seq([48, 49, 50, 84, 85, 86, 35], [59] * 7)                                # hit reactions
+seq([87, 36, 37, 38], [60] * 4)                                            # knocked into the air, falling
+seq([88, 89, 90], [60, 65, 65])                                            # landing on the back
+seq([43, 44, 45, 46, 47], [65, 65, 61, 62, 62])                            # lying, sitting up, kneeling
+seq([29, 30, 31, 32, 33], [65, 65, 61, 62, 62])
+seq([242, 243, 244], [95, 96, 97])                                         # Cape Charge strike: BR cape spin
+FLIP = {242, 243, 244}                                                     # the cape spin poses face left in the rip                                                   # Smoke Teleport flight: cape dive, then glide down
 
 
 def fallback(mask):
@@ -145,6 +171,8 @@ def main(ninja_dir, preview=None):
             pose, src = fallback(mask), "shape"
         if pose is not None:
             frames[str(f)] = dict(pose=pose, src=src)
+            if f in FLIP:
+                frames[str(f)]["flip"] = True
     os.makedirs(os.path.join(REPO, "art"), exist_ok=True)
     json.dump(geom, open(os.path.join(REPO, "art", "ninja_frames.json"), "w"), indent=0, sort_keys=True)
     json.dump(dict(frames=frames), open(os.path.join(REPO, "art", "batman_frame_map.json"), "w"), indent=0, sort_keys=True)
