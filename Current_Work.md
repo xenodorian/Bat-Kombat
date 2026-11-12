@@ -1068,3 +1068,11 @@ A glide held from a normal jump, as in Batman Returns, would need new movement c
   show art/explosive_vial.png, turned a quarter more each frame. The blast after the hit (set 18) is unchanged.
 - Checked: the vial spins across the screen and the blast plays; all five specials still fire; Mileena vs Noob
   unaffected; 10,000 frames of random input with special inputs, no freeze. Screenshot: deliverables/batman_explosive.png.
+
+## 2026-11-12: pose review (PLAN B2, B4)
+
+Review sheets (tools/review_map.py) of the 55 shape-mapped frames. 29 got hand-picked poses in EXPLICIT:
+1-9 (reach and grab), 26-28 (throw start), 59-62 (punch combo), 93, 103, 104, 159, 162, 163, 165 (tumbles),
+178, 179 (arms up), 206, 207 (knee), 224, 227. Now 217 explicit, 26 by shape. The rest are crouch variants,
+lying frames and other ninjas' weapon frames (234-241), where the shape match was already acceptable.
+Checked: the throw (grab, roll, kick off) on screen, 9,000 frames random input. Screenshot: deliverables/batman_throw.png.

@@ -86,6 +86,12 @@ seq(range(112, 120), [81, 82, 83, 83, 83, 83, 83, 81])                     # Gra
 seq([210, 211, 212, 213], [67, 69, PUNCH, PUNCH])                          # Batarang throw (spit frames)
 seq([208, 209], [68, PUNCH])                                               # Explosive throw (fireball frames)
 seq([242, 243, 244], [PUNCH_WIND, PUNCH, PUNCH_BACK])                      # Cape Charge strike (dash elbow frames)
+seq([1, 2, 3, 4, 5, 6, 7, 8, 9], [BLOCK, BLOCK, PUNCH, PUNCH, PUNCH_WIND, PUNCH_WIND, PUNCH, ARM_UP, HIT_BACK])   # reach and grab
+seq([26, 27, 28], [PUNCH, CROUCH_PUNCH_B, CROUCH_PUNCH_B])                 # throw: grab, then roll back
+seq([59, 60, 61, 62], [PUNCH_BACK, PUNCH_BACK, PUNCH, PUNCH])              # punch combo frames
+seq([93, 103, 104], [HIT_BACK, PUNCH, PUNCH])
+seq([159, 162, 163, 165], [FALLING, FALLING, FALLING, CROUCH_BLOCK])       # tumbling, upside down
+seq([178, 179, 206, 207, 224, 227], [ARMS_UP, ARMS_UP, KNEE, KNEE, HIT_GUT, CROUCH])
 seq([41, 171], [34, 96])                                                   # Smoke Teleport flight: cape dive, then glide down
 
 
