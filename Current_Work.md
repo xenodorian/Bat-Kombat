@@ -1076,3 +1076,9 @@ Review sheets (tools/review_map.py) of the 55 shape-mapped frames. 29 got hand-p
 178, 179 (arms up), 206, 207 (knee), 224, 227. Now 217 explicit, 26 by shape. The rest are crouch variants,
 lying frames and other ninjas' weapon frames (234-241), where the shape match was already acceptable.
 Checked: the throw (grab, roll, kick off) on screen, 9,000 frames random input. Screenshot: deliverables/batman_throw.png.
+
+## 2026-11-12: banners and texts
+
+- Win banners: Noob Saibot's (an untouched frame) and FINISH HIM / FATALITY (copied frames) checked on screen.
+- Ending and bio text are compressed; see PLAN.md item F for what is known about the decompressor and where
+  Rain's text block appears to be. Not replaced.

@@ -69,7 +69,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | C | Effect art | C1 grapple hook and C2 explosive vial done 2026-11-12; the blast and rope are still the originals |
 | D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
 | E | Sounds | Rain's |
-| F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12 (Batman stands still under the banner); texts not located |
+| F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12; ending/bio text is compressed, location partly found, not replaced |
 | G | Other emulators and real hardware | bsnes-mercury accuracy core checked 2026-11-12 (boot to specials, all fine); hardware and Mesen not checked |
 | H | Small face on the one-player tower ("Choose your destiny") | done 2026-11-12 (tools/tower_face_patch.py) |
 
@@ -156,7 +156,15 @@ been looked at. Skip unless the owner asks.
 
 - Friendship: fighter 24 has none. A kind-6 record with handler `$F2D1` (bank `$83`) could reuse a ninja's
   friendship. Not tested.
-- Ending and attract-mode bio text for Rain: not located. Strings are plain ASCII (see the string dump in
+- Ending and attract-mode bio text (2026-11-12): stored compressed, so plain searches only find fragments.
+  A block around file `0x259D08` (bank `$E5`) holds Rain's text (fragments "BIR..D FROM", "ORIGIN", "RAIN'").
+  The general decompressor `$88:AD30` reads a header (word: output size, byte: mode; mode 2 is a second scheme
+  at `$88:AE7D`) and writes the output backwards. Command byte: bit 7 long back-reference (11-bit distance),
+  bit 6 another reference form, bit 5 short reference (low 5 bits), none set = literal run of 1-31 bytes
+  (jump table `$88:B15E`), 0 = end. To replace the text: write an encoder that emits only literal runs, check it
+  by decompressing original blocks with a Python port and comparing to RAM, find the pointer to the Rain block,
+  and point it at the new block. Seeing the ending requires finishing the one-player game (poke health).
+  Old note: Strings are plain ASCII (see the string dump in
   `Current_Work.md`, step 2); search near `06B8F0` and the name table at file `0x3E544`.
 - The name table entry `-RAIN` (file `0x3E544 + 48`) is used somewhere not yet identified; the old reskin
   patch changed it to `-BATMAN`. Check where `-RAIN` still shows (tournament screen is the likely place).
@@ -165,7 +173,8 @@ been looked at. Skip unless the owner asks.
 
 - Run the release in bsnes or Mesen (more accurate than snes9x). Things to watch: the 8 MB ExHiROM header,
   the hook timing, the VS screen.
-- Stage fatality on a pit stage, friendship off, every other fighter's win banner (set 19 frames 65 to 97
+- Checked 2026-11-12: Noob Saibot's win banner, FINISH HIM and FATALITY draw correctly from the set-19 copy.
+- Stage fatality on a pit stage (not checked: the stage could not be chosen from the harness), friendship off, every other fighter's win banner (set 19 frames 65 to 97
   were copied), one-player ladder to the end.
 
 ### H. Tower portrait
