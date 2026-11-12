@@ -35,6 +35,7 @@ import tower_face_patch
 import roster_portrait_patch
 import umk3_sprites
 import vs_portrait
+import batman_sound_patch
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NINJA_SET = 27
@@ -420,6 +421,9 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
             VIAL_CENTRE[0] - img.shape[1] // 2, VIAL_CENTRE[1] - img.shape[0] // 2)
     fb_bank, fb_addr = copy_set(rom4, FIREBALL_SET, vial_records, vstore, alloc, put)
 
+    # sounds: Batman Returns samples for the sounds Batman makes
+    sound_info = batman_sound_patch.patch(rom, alloc, put)
+
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
     code = hook_code([(NINJA_SET, cbank, h_addr), (FIREBALL_SET, fb_bank, fb_addr)])
@@ -452,7 +456,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     exhirom.fix_checksum(rom)
 
     if report is not None:
-        report.update(vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
+        report.update(sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
                       mapped_frames=len(frame_map), header="%02X:%04X" % (cbank, h_addr),
                       last_bank="%02X" % alloc.bank, palette=palette,
                       lost={"%d%s" % (i, "f" if fl else ""): p.lost for (i, fl), p in poses.items() if p.lost},

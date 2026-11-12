@@ -55,7 +55,8 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
 - The rope, the explosive's blast and the hit effects use the original art. The batarang, grapple hook and vial are redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
-- Sounds are Rain's. CPU-controlled Batman is not checked. See `PLAN.md` for what is left and how to continue.
+- Sounds: Batman's swings, the hits he takes and his Batarang and Grapple Gun throws use Batman Returns samples; Rain's
+  voice is silenced (Batman does not speak in Batman Returns). Listen: deliverables/batman_sounds_before.wav and _after.wav. See `PLAN.md` for what is left and how to continue.
 
 ## Rebuild
 
@@ -101,6 +102,7 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 - `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.
 - `art/batman_poses.tar.gz`: 100 Batman poses (a sprite rip of Batman Returns). `art/batman_frame_map.json`, `art/ninja_frames.json`: mapping data.
 - `PLAN.md`: work plan and handoff. `tools/rig/`: emulator test rig (fight state, move filming, finisher filming).
+- `tools/batman_sound_patch.py`, `extract_br_sounds.py`, `brr.py`: sounds (art/batman_sounds holds the extracted samples).
 - `tools/vs_portrait.py`, `tower_face_patch.py`, `make_win_banner.py`: VS screen portrait and win banner.
 - `Current_Work.md`: full history, including earlier approaches that did not work. `ROUTINES_UMK3.md`: earlier routine notes.
 - Superseded, kept for history: `tools/make_batman_fighter.py` (sprite overlay hook), `tools/make_batman_reskin.py` (palette swap), `NEXT.md`.

@@ -28,7 +28,8 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 - `tools/rig/fat.py`: `finish_state(rom)` reaches FINISH HIM; `film(c, st, "DDR", "X", out.png)` films a finisher.
 - Buttons: Y high punch, B low punch, X high kick, A low kick, L block, R run.
 - Look at every screenshot you make. Most bugs so far were visible only in the picture.
-- After each change run a random-input stress of about 9,000 frames in two-player mode and check for a freeze.
+- After each change run tools/rig/liveness.py on several seeds. Do not rely on identical frames to detect a
+  hang: a crashed game can still change the picture (found 2026-11-13).
 
 ## Where things live in the ROM (all verified unless marked)
 
@@ -68,7 +69,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | B | Batman Returns moves; pose review | 2026-11-12: 29 more frames mapped by hand (217 explicit, 26 by shape left: crouch variants, weapon frames 234-241, lying frames); throw now grab, roll, kick off. Earlier: | glide poses on the teleport flight done 2026-11-12; a held glide from a jump is not possible without new code; throw left as is |
 | C | Effect art | C1 grapple hook and C2 explosive vial done 2026-11-12; the blast and rope are still the originals |
 | D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
-| E | Sounds | Rain's |
+| E | Sounds | done 2026-11-13: Batman Returns swing, impact and batarang samples for Batman only; Rain's voice silenced (tools/batman_sound_patch.py) |
 | F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12; ending/bio text is compressed, location partly found, not replaced |
 | G | Other emulators and real hardware | bsnes-mercury accuracy core checked 2026-11-12 (boot to specials, all fine); hardware and Mesen not checked |
 | H | Small face on the one-player tower ("Choose your destiny") | done 2026-11-12 (tools/tower_face_patch.py) |

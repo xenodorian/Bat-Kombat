@@ -12,7 +12,7 @@ Addresses are canonical: ROM in banks C0-FF (HiROM), work RAM at 7E0000-7FFFFF. 
     c.run(300, [])
     for e in c.log(): print(e)
 
-Log entries: dict(type 'X'/'R'/'W', addr, val, pc, a, x, y, s, d, db, p). pc is the 24-bit address of the instruction.
+Log entries: dict(type 'X'/'R'/'W'/'D' (D = sound DSP register write, see watch_dsp), addr, val, pc, a, x, y, s, d, db, p). pc is the 24-bit address of the instruction.
 Not logged: opcode fetches, DMA transfers, and APU/SPC reads.
 """
 import ctypes as C
@@ -64,6 +64,11 @@ class DbgCore(h.Core):
         if r < 0:
             raise ValueError("poke rejected (too many pokes, too long, or out of range)")
         return r
+
+    def watch_dsp(self, on=True):
+        """Log every write to the sound DSP registers as type 'D' entries (addr = register 0-127, val = data)."""
+        self.lib.dbg_dsp_enable.argtypes = [C.c_int]
+        self.lib.dbg_dsp_enable(1 if on else 0)
 
     def clear_pokes(self):
         self.lib.dbg_clear_pokes()

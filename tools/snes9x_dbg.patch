@@ -1,7 +1,22 @@
-diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp
+diff -ruN -x '*.o' -x '*.so' -x '*.a' -x '*.d' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/apu/bapu/dsp/SPC_DSP.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/apu/bapu/dsp/SPC_DSP.h
+--- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/apu/bapu/dsp/SPC_DSP.h	2022-03-03 16:41:25.000000000 +0000
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/apu/bapu/dsp/SPC_DSP.h	2026-11-12 21:01:42.370581903 +0000
+@@ -263,9 +263,11 @@
+ 	return m.regs [addr];
+ }
+ 
++extern "C" { extern int dbg_dsp_on; void dbg_dsp_write(int addr, int data); }
+ inline void SPC_DSP::write( int addr, int data )
+ {
+ 	assert( (unsigned) addr < register_count );
++	if ( dbg_dsp_on ) dbg_dsp_write( addr, data );
+ 
+ 	m.regs [addr] = (uint8_t) data;
+ 	switch ( addr & 0x0F )
+diff -ruN -x '*.o' -x '*.so' -x '*.a' -x '*.d' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp
 --- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2022-03-03 16:41:25.000000000 +0000
-+++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2026-10-15 00:07:05.407226861 +0000
-@@ -17,6 +17,130 @@
++++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/cpuexec.cpp	2026-11-12 21:01:42.370896005 +0000
+@@ -17,6 +17,134 @@
  #include "missing.h"
  #endif
  
@@ -115,6 +130,10 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +}
 +void dbg_clear_pokes(void) { dbg_poke_n = 0; }
 +uint32 dbg_log_total(void) { return dbg_total; }
++/* DSP register writes, logged as type 'D' (addr = register, val = data) while dbg_dsp_on is set. */
++int dbg_dsp_on = 0;
++void dbg_dsp_write(int addr, int data) { dbg_push('D', (uint32) addr, (uint8) data); }
++void dbg_dsp_enable(int on) { dbg_dsp_on = on; }
 +int dbg_entry_size(void) { return (int) sizeof(DbgEntry); }
 +/* Copy the most recent up to max entries (oldest first) into out and clear the log. Returns count. */
 +int dbg_log_read(DbgEntry *out, int max)
@@ -132,7 +151,7 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
  static inline void S9xReschedule (void);
  
  void S9xMainLoop (void)
-@@ -142,6 +266,8 @@
+@@ -142,6 +270,8 @@
  			break;
  		}
  
@@ -141,7 +160,7 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
  		uint8				Op;
  		struct	SOpcodes	*Opcodes;
  
-diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/dbg_hooks.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/dbg_hooks.h
+diff -ruN -x '*.o' -x '*.so' -x '*.a' -x '*.d' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/dbg_hooks.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/dbg_hooks.h
 --- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/dbg_hooks.h	1970-01-01 00:00:00.000000000 +0000
 +++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/dbg_hooks.h	2026-10-14 23:59:14.205642021 +0000
 @@ -0,0 +1,14 @@
@@ -159,7 +178,7 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
 +void dbg_check_write(uint32 addr, uint8 val);
 +}
 +#endif
-diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/getset.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/getset.h
+diff -ruN -x '*.o' -x '*.so' -x '*.a' -x '*.d' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/getset.h /opt/snes9x_src/libretro-snes9x-1.61+dfsg/getset.h
 --- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/getset.h	2022-03-03 16:41:25.000000000 +0000
 +++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/getset.h	2026-10-15 00:00:41.838320974 +0000
 @@ -8,6 +8,7 @@
@@ -202,7 +221,7 @@ diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg
  	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
  	if ((Address & mask) == mask)
  	{
-diff -ruN -x '*.o' -x '*.so' -x '*.a' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/libretro/link.T /opt/snes9x_src/libretro-snes9x-1.61+dfsg/libretro/link.T
+diff -ruN -x '*.o' -x '*.so' -x '*.a' -x '*.d' /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/libretro/link.T /opt/snes9x_src/libretro-snes9x-1.61+dfsg/libretro/link.T
 --- /opt/snes9x_orig/libretro-snes9x-1.61+dfsg/libretro/link.T	2022-03-03 16:41:25.000000000 +0000
 +++ /opt/snes9x_src/libretro-snes9x-1.61+dfsg/libretro/link.T	2026-10-14 23:59:14.236628571 +0000
 @@ -1,4 +1,4 @@

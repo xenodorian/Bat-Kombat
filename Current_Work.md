@@ -1082,3 +1082,44 @@ Checked: the throw (grab, roll, kick off) on screen, 9,000 frames random input. 
 - Win banners: Noob Saibot's (an untouched frame) and FINISH HIM / FATALITY (copied frames) checked on screen.
 - Ending and bio text are compressed; see PLAN.md item F for what is known about the decompressor and where
   Rain's text block appears to be. Not replaced.
+
+## 2026-11-13: Batman Returns sounds (PLAN E)
+
+Owner asked for Batman-only sounds. Everything below was found with the debugger; which Batman Returns sample is
+which was inferred from timing in the sound-chip log, not by listening (I cannot hear audio).
+
+Tools added:
+- Debug core: DSP register writes are logged as type 'D' (DbgCore.watch_dsp). Patch regenerated in tools/snes9x_dbg.patch.
+- tools/brr.py (BRR decode/encode, filters as in snes9x), tools/extract_br_sounds.py (writes art/batman_sounds/*.wav).
+- Sound RAM is the first 64 KB of the "SND" block of a snes9x save state.
+
+Batman Returns: sample directory at sound RAM $4C00. Music uses samples 2, 3, 7, 9, 11, 17, 19. Sample 13 keys on
+every punch and jump (swing, pitch $06A5). 18 keys on two voices when a punch lands and when Batman is hurt
+(impact, several pitches). 8 keys on the batarang throw and when Batman is hurt. Batman's health is $7E:0956.
+
+UMK3 sound system:
+- All requests pass $84:FE62 (A = address in bank $86 of [sound id, priority]); $84:EF4B starts the sound.
+- Voice yells come from per-voice-set tables in bank $86 (pointer list $86:FB24, set number per fighter at
+  $86:FC28 low nibble). Rain (24) shares voice set 1 with others.
+- Sound bank header $CE:9900 (layout in the patch docstring). Code reads only header offsets 0-5 plus two
+  computed pointers ($84:ECC0/$ECC5 and $84:EC3E/$EC49). The sound program upload reads $CE:9D4A through an
+  absolute pointer in sample 0's header, so it is not affected by moving the tables.
+- The sound id is also sent to the sound CPU, which has its own 146-entry table: new ids above 145 make it play
+  garbage. So Batman's sounds reuse streamed ids ($81, $86, $87) and only the streamed sample is swapped.
+- Streamed sample data = 3 prefix bytes + BRR; the streamer ORs $80 into the bank, so data must be in $C0-$FF.
+- Hit reactions are requested on the victim's direct page ($62 there = attacker).
+
+What tools/batman_sound_patch.py does: copies the sample pointer table to $46:0000 with three new samples, puts the
+BRR data in bank $FF free space, hooks $84:FE62 (remap for fighter 24, plus victim-side remap of $5F/$35 when the
+attacker is fighter 24) and $84:EF8C (sample override). Override word at $7E:1CF8.
+
+Bug found and fixed on the way: the first override address $7E:03F8 is direct-page $F8 of the thread that runs
+with D=$0300 in a two-player fight, which crashed the game after some inputs. $7E:1C5B-$1CFF was never written in
+1P and 2P sessions, so $7E:1CF8 is used. Earlier "no freeze" stress results only checked for identical frames;
+tools/rig/liveness.py now checks that code still runs from ROM. With it, the builds before the sound work were
+re-checked on several seeds and are alive; the sound build is alive on seeds 1-4, 6, 9, 11, 12 and a 1P ladder run.
+
+Checked: stream voice keys on and Batman's sample bytes reach sound RAM for his punch, Batarang, Grapple Gun and
+when he is hit; Mileena vs Noob never takes the Batman branch (override never set in 6,000 frames).
+Recordings: deliverables/batman_sounds_before.wav and batman_sounds_after.wav (same input sequence).
+Not checked: how it sounds to a person; the pitches chosen for samples 8 and 18 are a judgement call.
