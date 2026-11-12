@@ -58,6 +58,12 @@ BATARANG.update({f: (41 + f % 2, 108, -36 - 4 * (f % 2)) for f in range(262, 270
 BLANK = list(range(270, 275))                                                         # drips at the mouth
 
 
+# Grapple Gun: the spear frames (rope with the blade at the far end) keep their rope; the two 8x8 pieces that
+# hold the blade are replaced by art/grapple_hook.png (16x8, indexes of the spear's own palette).
+# frame: object-local position of the first of the two blade pieces
+GRAPPLE = {290: (73, -63), 291: (73, -63), 292: (72, -63)}
+
+
 def effect_index(rgba):
     """RGBA art -> indexes of the projectile palette, by brightness."""
     lum = rgba[:, :, :3].astype(float).mean(axis=2)
@@ -241,6 +247,19 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
 
     for f, (i, x, y) in BATARANG.items():
         records[f] = Pose(effect_index(poses_rgba[i]), store, (0, 0)).record(x, y)
+    hook = np.array(Image.open(os.path.join(REPO, "art", "grapple_hook.png")))
+    hook_words = [store.word(hook[:, 0:8], False), store.word(hook[:, 8:16], False)]
+    for f, (hx, hy) in GRAPPLE.items():
+        pieces = ninja.decode(f)[0]
+        n16 = sum(1 for q in pieces if q["size"] == 16)
+        rec, swapped = bytearray([len(pieces), n16]), 0
+        for q in pieces:
+            words = q["tiles"]
+            if q["size"] == 8 and q["y"] == hy and q["x"] in (hx, hx + 8):
+                words, swapped = [hook_words[(q["x"] - hx) // 8]], swapped + 1
+            rec += bytes([0x00, q["x"] & 0xFF, q["y"] & 0xFF]) + b"".join(struct.pack("<H", t) for t in words)
+        assert swapped == 2, "spear blade pieces not found in frame %d" % f
+        records[f] = bytes(rec)
     for f in BLANK:
         records[f] = bytes([1, 0, 0x00, 0, 0]) + struct.pack("<H", store.word(np.zeros((8, 8), np.uint8), False))
 

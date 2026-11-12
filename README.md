@@ -34,6 +34,7 @@ Directions are for Batman facing right; mirror them when he faces left.
 | Fatality 1 | Down, Down, Forward, High Kick (close) | Ermac's uppercut decapitation |
 | Fatality 2 | Forward, Forward, Down, Low Punch (close) | Ermac's lift and slam |
 | Babality | Forward, Back, Back, High Punch | Rain's (unchanged) |
+| Friendship | Back, Forward, Forward, Low Kick | generic friendship code; Batman stands still under the banner |
 | Stage fatality | Forward, Down, Forward, Low Kick | Rain's (unchanged) |
 
 ![Fatality 1](deliverables/batman_fatality_1.png)
@@ -51,7 +52,7 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
 ## What is still borrowed
 
 - Normal moves, hit boxes, damage and sounds are Rain's. The specials above are other ninjas' code.
-- The grapple rope, explosive fireball and hit effects use the original art. Only the batarang is redrawn.
+- The explosive fireball, the rope and the hit effects use the original art. The batarang and the grapple hook are redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
 - Sounds are Rain's. CPU-controlled Batman is not checked. See `PLAN.md` for what is left and how to continue.

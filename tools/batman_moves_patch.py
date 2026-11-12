@@ -51,6 +51,7 @@ MOVES = [
 FINISHERS = [
     ("Fatality 1", HK, 2, 0xD4BF, 0x8011, 0x30, "DDR"),
     ("Fatality 2", LP, 2, 0xD4BF, 0x801F, 0x30, "RRD"),
+    ("Friendship", LK, 6, 0xD5B7, 0xF2D1, 0x30, "LRR"),
 ]
 FATALITY_1_ROUTINE = 0x842E          # Ermac's second fatality: uppercut that takes the head off
 FATALITY_2_ROUTINE = 0x8471          # Ermac's first fatality: lift and slam until the opponent bursts
@@ -67,6 +68,7 @@ MOVE_LIST = [
     ("Fatality 1", "Down, Down, Forward, High Kick"),
     ("Fatality 2", "Forward, Forward, Down, Low Punch"),
     ("Babality", "Forward, Back, Back, High Punch"),
+    ("Friendship", "Back, Forward, Forward, Low Kick"),
 ]
 
 

@@ -1010,3 +1010,16 @@ Measured: 241 frames before round 1, 0 before round 2. Not checked: a match with
   A 300-frame identical screen was reported once; it was the black transition after the continue screen.
 - Batman as player 2: Explosive and Cape Charge do damage with mirrored inputs. Both fatalities run to the end
   (decapitation and slam shown on Mileena).
+
+## 2026-11-12: grapple hook art and friendship (PLAN C1, F)
+
+- The spear is one set-27 frame per stage: 290 and 291 (wavy rope) and 292 (taut rope), blade at the far end.
+  tools/build_batman.py re-encodes those three records with the same tile words, except the two 8x8 pieces
+  that hold the blade, which now show art/grapple_hook.png (drawn in the spear's own palette indexes:
+  5 bright metal, 9 edge). Checked on screen during the Grapple Gun.
+- Friendship: a kind-6 record (handler $83:F2D1, condition $82:D5B7) works for fighter 24 with no other change.
+  The screen darkens, the FRIENDSHIP banner shows, Batman keeps his stance (fighter 24 has no friendship
+  animation). Input: Back, Forward, Forward, Low Kick.
+- Rechecked on this build: all five specials, both fatalities (FATALITY banner seen), move list (11 lines,
+  241 frames before round 1), 10,000 frames of random two-player input.
+- Throw (PLAN B2) left as it is: it already reads as a roll throw.
