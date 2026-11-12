@@ -1000,3 +1000,13 @@ Free bytes left in bank $82: about 8 at $82:FF69 and 23 at $82:EABD. More moves 
 
 The move list now shows only before round 1 (round-win counters $7E:36E0 and $7E:38A4 both zero).
 Measured: 241 frames before round 1, 0 before round 2. Not checked: a match with a kombat kode active.
+
+## 2026-11-12: checks (PLAN step D and player-2 gaps)
+
+- CPU Batman: forced by poking the opponent id ($7E:3894 = 24) every frame from the tower screen in a
+  one-player game. It fought two full rounds against a random-input Mileena and won. Specials seen: the dash
+  (frames 242 to 244). No projectile or effect objects owned by it were seen in about 5,000 frames, so whether
+  the CPU ever calls Rain's old orb or lightning is still not known. No crash.
+  A 300-frame identical screen was reported once; it was the black transition after the continue screen.
+- Batman as player 2: Explosive and Cape Charge do damage with mirrored inputs. Both fatalities run to the end
+  (decapitation and slam shown on Mileena).

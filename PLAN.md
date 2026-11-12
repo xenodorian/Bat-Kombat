@@ -65,7 +65,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | A | Move list shows again before every round | fixed 2026-11-12 (241 frames before round 1, 0 before round 2) |
 | B | Batman Returns moves not yet in: glide, throw, combos | open |
 | C | Effect art still the ninjas': grapple hook and rope, explosive, teleport flame, blood on batarang | open |
-| D | CPU-controlled Batman | not checked |
+| D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
 | E | Sounds | Rain's |
 | F | Friendship, ending text, attract-mode bio | none / Rain's |
 | G | Other emulators and real hardware | not checked |
