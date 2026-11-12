@@ -35,6 +35,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | Thing | Location |
 |---|---|
 | Batman sprite set, header | `$40:0000` (expanded ROM), swapped in for set 27 by the hook at `$FF:DC6E` |
+| Batman's copy of set 16 (vial) | expanded ROM, swapped in for set 16 by the same hook (`hook_code(swaps)`) |
 | Special-move pointer tables, per button | `$82:BAC9` HP, `$BB01` LP, `$BB39` BLOCK, `$BB71` HK, `$BBA9` LK, `$BA91` RUN |
 | Batman's move matcher copy and table | `$FF:E000`, reached from the stub at `$82:EA7C` |
 | Fatality jump tables | `$82:802D` (first), `$82:8065` (second), index fighter id * 2 |
@@ -65,7 +66,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | 8 | Mirror match palette | done |
 | A | Move list shows again before every round | fixed 2026-11-12 (241 frames before round 1, 0 before round 2) |
 | B | Batman Returns moves not yet in: glide, throw, combos | glide poses on the teleport flight done 2026-11-12; a held glide from a jump is not possible without new code; throw left as is |
-| C | Effect art | C1 grapple hook done 2026-11-12; C2 explosive (shared set 16, needs a second hook) open |
+| C | Effect art | C1 grapple hook and C2 explosive vial done 2026-11-12; the blast and rope are still the originals |
 | D | CPU-controlled Batman | checked 2026-11-12: two full rounds, no crash, uses the dash; no projectile seen |
 | E | Sounds | Rain's |
 | F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12 (Batman stands still under the banner); texts not located |

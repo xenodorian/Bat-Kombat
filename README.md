@@ -28,7 +28,7 @@ Directions are for Batman facing right; mirror them when he faces left.
 | Batarang | Down, Forward, High Punch | Reptile's spit code, projectile redrawn as a batarang |
 | Smoke Teleport | Down, Back, High Punch (also in the air) | Scorpion's teleport punch |
 | Grapple Gun | Back, Back, Low Punch | Scorpion's spear, fired from the grapple gun pose |
-| Explosive | Down, Back, Low Punch | Ermac's fireball |
+| Explosive | Down, Back, Low Punch | Ermac's fireball, redrawn as a spinning glass vial |
 | Cape Charge | Back, Forward, Low Kick | Reptile's dash |
 | Spin Kick | Back + High Kick | Rain's roundhouse (unchanged) |
 | Fatality 1 | Down, Down, Forward, High Kick (close) | Ermac's uppercut decapitation |
@@ -52,7 +52,7 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
 ## What is still borrowed
 
 - Normal moves, hit boxes, damage and sounds are Rain's. The specials above are other ninjas' code.
-- The explosive fireball, the rope and the hit effects use the original art. The batarang and the grapple hook are redrawn.
+- The rope, the explosive's blast and the hit effects use the original art. The batarang, grapple hook and vial are redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
 - Sounds are Rain's. CPU-controlled Batman is not checked. See `PLAN.md` for what is left and how to continue.

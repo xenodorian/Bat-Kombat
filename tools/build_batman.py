@@ -44,6 +44,8 @@ RAIN_ALT_PALETTE = 0x08C4AD       # Rain's palette as player 2 in a mirror match
 HOOK_SITE = 0x08A47A               # $88:A47A  cmp $52E0,y / beq / sta $52E0,y / tax / two table loads
 HOOK_SITE_BYTES = bytes.fromhex("d9e052f05299e052aabfecea86854cbf24eb86854a")
 HOOK_CODE = 0x3FDC6E               # $FF:DC6E, 0xFF padding in the original
+HOOK_MAX = 0x3FDD00 - HOOK_CODE     # the move list code starts at $FF:DD00
+FIREBALL_SET, FIREBALL_FRAMES, VIAL_CENTRE = 16, (73, 74, 75, 76), (58, -35)   # Ermac's fireball in flight
 FIRST_NEW_TILESET = 47             # the ninja set uses tilesets 0-46
 MAX_TILESETS = 64
 PORTRAIT_POSE, PORTRAIT_CROP = 0, (26, 0, 50, 36)   # cowl and emblem of the standing pose
@@ -157,43 +159,46 @@ class Pose:
         return bytes(out)
 
 
-def hook_code(header_bank, header_addr):
+def hook_code(swaps):
     """65816 (16-bit A and index). Entered by JSL from $88:A47A with A = set*2, Y = object index, DB = $7E.
 
-    Returns Z=1 when the cached header is still right (the caller's beq then skips the reload), else loads
-    $4A/$4C with the header pointer. Rain with the ninja set gets the Batman header and an odd cache tag,
-    so a slot that changes fighter never keeps the wrong header.
+    swaps: [(set index, header bank, header addr)]. For an object whose fighter id ($52C8,y) is 24, those sets
+    load the given header instead, cached under the odd tag set*2+1 (never equal to a real set*2), so a slot
+    that changes owner never keeps the wrong header. Returns Z=1 when the cached header is still right (the
+    caller's beq then skips the reload), else Z=0 with $4A/$4C pointing to the header.
     """
-    S2 = NINJA_SET * 2
     prog = [
         bytes([0xAA]),                                   # tax
-        bytes([0xD9, 0xE0, 0x52]),                       # cmp $52E0,y
-        ("bne", "load"),
-        bytes([0xE0, S2, 0x00]),                         # cpx #set*2
-        ("bne", "cached"),
         bytes([0xB9, 0xC8, 0x52]),                       # lda $52C8,y   (fighter id of this object)
         bytes([0xC9, RAIN_ID, 0x00]),                    # cmp #24
-        ("beq", "load_bat"),                             # Rain, but the ninja header is cached: reload
-        "cached",
-        bytes([0xA9, 0x00, 0x00, 0x6B]),                 # lda #0 (Z=1) / rtl
-        "load",
+        ("bne", "plain"),
         bytes([0x8A]),                                   # txa
+    ]
+    for k, (st, _, _) in enumerate(swaps):
+        prog += [bytes([0xC9, 2 * st, 0x00]), ("beq", "swap%d" % k)]       # cmp #set*2 / beq
+    prog += [
+        "plain",
+        bytes([0x8A]),                                   # txa
+        bytes([0xD9, 0xE0, 0x52]),                       # cmp $52E0,y
+        ("beq", "cached"),
         bytes([0x99, 0xE0, 0x52]),                       # sta $52E0,y
         bytes([0xBF, 0xEC, 0xEA, 0x86, 0x85, 0x4C]),     # lda $86EAEC,x / sta $4C
         bytes([0xBF, 0x24, 0xEB, 0x86, 0x85, 0x4A]),     # lda $86EB24,x / sta $4A
-        bytes([0xE0, S2, 0x00]),                         # cpx #set*2
-        ("bne", "done"),
-        bytes([0xB9, 0xC8, 0x52]),                       # lda $52C8,y
-        bytes([0xC9, RAIN_ID, 0x00]),                    # cmp #24
-        ("bne", "done"),
-        "load_bat",
-        bytes([0xA9, S2 + 1, 0x00]),                     # lda #set*2+1  (odd tag: never equals a real set)
-        bytes([0x99, 0xE0, 0x52]),                       # sta $52E0,y
-        bytes([0xA9, header_bank, 0x00, 0x85, 0x4C]),    # lda #bank / sta $4C
-        bytes([0xA9, header_addr & 0xFF, header_addr >> 8, 0x85, 0x4A]),   # lda #addr / sta $4A
-        "done",
         bytes([0xA9, 0x01, 0x00, 0x6B]),                 # lda #1 (Z=0) / rtl
+        "cached",
+        bytes([0xA9, 0x00, 0x00, 0x6B]),                 # lda #0 (Z=1) / rtl
     ]
+    for k, (st, hb, ha) in enumerate(swaps):
+        prog += [
+            "swap%d" % k,
+            bytes([0xA9, 2 * st + 1, 0x00]),             # lda #set*2+1
+            bytes([0xD9, 0xE0, 0x52]),                   # cmp $52E0,y
+            ("beq", "cached"),
+            bytes([0x99, 0xE0, 0x52]),                   # sta $52E0,y
+            bytes([0xA9, hb, 0x00, 0x85, 0x4C]),         # lda #bank / sta $4C
+            bytes([0xA9, ha & 0xFF, ha >> 8, 0x85, 0x4A]),   # lda #addr / sta $4A
+            bytes([0xA9, 0x01, 0x00, 0x6B]),             # lda #1 / rtl
+        ]
     opcodes = {"bne": 0xD0, "beq": 0xF0}
     labels, pos = {}, 0
     for item in prog:
@@ -210,6 +215,51 @@ def hook_code(header_bank, header_addr):
         elif isinstance(item, bytes):
             c += item
     return bytes(c)
+
+
+def copy_set(rom4, index, new_records, store, alloc, put):
+    """Write a copy of sprite set `index` with some frame records replaced. Returns (header bank, header addr).
+
+    new_records: {frame: record bytes}; their tile words must use tilesets from `store`, whose first index is
+    one past the set's own tilesets. All other records are copied as they are. One frame-pointer bank per 64 frames.
+    """
+    old = umk3_sprites.SpriteSet(rom4, index)
+    n = old.frame_count()
+    n_ts = store.first + (len(store.tiles) + 255) // 256
+    tbank, taddr = alloc.alloc(16 + 8 + 2 * n + 4 * n_ts)
+    ts = bytearray(rom4[old.tileset_tab:old.tileset_tab + 4 * store.first])
+    for k in range((len(store.tiles) + 255) // 256):
+        gbank, gaddr = alloc.alloc(0x2000, align=0x20)
+        put(gbank, gaddr, b"".join(store.tiles[k * 256:(k + 1) * 256]))
+        ts += struct.pack("<HH", gaddr, 0x2000 | gbank)
+    ptrs, banks = bytearray(), bytearray()
+    for blk in range((n + 63) // 64):
+        recs = []
+        for f in range(blk * 64 + 1, min(blk * 64 + 64, n) + 1):
+            recs.append(new_records.get(f) or bytes(rom4[old.frame_offset(f):old.frame_offset(f) + old.decode(f)[1]]))
+        rbank, raddr = alloc.alloc(sum(len(r) for r in recs))
+        blob = bytearray()
+        for r in recs:
+            ptrs += struct.pack("<H", raddr + len(blob))
+            blob += r
+        put(rbank, raddr, blob)
+        banks.append(rbank)
+    h = bytearray(old.header)
+    struct.pack_into("<H", h, 0, taddr + 16)                  # bank table
+    struct.pack_into("<H", h, 2, taddr + 24 + 2 * n)          # tileset table
+    h[4] = tbank
+    struct.pack_into("<H", h, 5, taddr + 24)                  # frame pointer table
+    h[7] = tbank
+    put(tbank, taddr, h)
+    put(tbank, taddr + 16, bytes(banks).ljust(8, b"\0"))
+    put(tbank, taddr + 24, ptrs)
+    put(tbank, taddr + 24 + 2 * n, ts)
+    return tbank, taddr
+
+
+def first_free_tileset(rom4, index):
+    sset = umk3_sprites.SpriteSet(rom4, index)
+    return 1 + max((t >> 2) & 63 for f in range(1, sset.frame_count() + 1) for q in sset.decode(f)[0] for t in q["tiles"] if t)
 
 
 def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
@@ -358,9 +408,22 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     # large portrait on the VS screen
     vs_info = vs_portrait.build(rom, alloc, put, poses_rgba, os.environ.get("VS_PREVIEW"))
 
+    # Explosive: Batman's copy of set 16 (Ermac's fireball) shows a spinning vial in frames 73-76
+    vial = np.array(Image.open(os.path.join(REPO, "art", "explosive_vial.png")))
+    vstore = TileStore(first_free_tileset(rom4, FIREBALL_SET), first_free_tileset(rom4, FIREBALL_SET) + 1)
+    vial_records = {}
+    for k, f in enumerate(FIREBALL_FRAMES):
+        img = vial
+        for _ in range(k):
+            img = np.rot90(img, -1)                       # quarter turns: the vial spins as it flies
+        vial_records[f] = Pose(np.ascontiguousarray(img), vstore, (0, 0)).record(
+            VIAL_CENTRE[0] - img.shape[1] // 2, VIAL_CENTRE[1] - img.shape[0] // 2)
+    fb_bank, fb_addr = copy_set(rom4, FIREBALL_SET, vial_records, vstore, alloc, put)
+
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
-    code = hook_code(cbank, h_addr)
+    code = hook_code([(NINJA_SET, cbank, h_addr), (FIREBALL_SET, fb_bank, fb_addr)])
+    assert len(code) <= HOOK_MAX, "hook code too long for its free area"
     assert all(b == 0xFF for b in rom[HOOK_CODE:HOOK_CODE + len(code)]), "hook area is not free"
     rom[HOOK_CODE:HOOK_CODE + len(code)] = code
     site = bytes([0x22, HOOK_CODE & 0xFF, (HOOK_CODE >> 8) & 0xFF, 0xFF])        # jsl $FF:DC6E

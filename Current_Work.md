@@ -1056,3 +1056,15 @@ A glide held from a normal jump, as in Batman Returns, would need new movement c
   fighter id in $7E:3AD0 and calls the decompressor at $87:F996 and $87:F9DF. Those two calls now go through the
   same raw-data loader as the VS screen, so this screen cannot decompress Batman's raw data as garbage.
   Which screen it is was not found (an exec watch during the one-player path never hit). Not tested.
+
+## 2026-11-12: Explosive vial (PLAN C2)
+
+- The hook at $FF:DC6E is now generic: hook_code(swaps) takes a list of (set, header bank, header addr). For an
+  object whose fighter id ($7E:52C8,y) is 24, each listed set loads its own header, cached under the odd tag
+  set*2+1. The code is 109 bytes and must end before $FF:DD00 (asserted).
+- copy_set() in tools/build_batman.py writes a copy of any sprite set with some frame records replaced and new raw
+  tiles in an extra tileset; first_free_tileset() finds the first unused tileset index.
+- Set 16 frames 73-76 (Ermac's fireball in flight, palette 5, the same projectile palette as the batarang) now
+  show art/explosive_vial.png, turned a quarter more each frame. The blast after the hit (set 18) is unchanged.
+- Checked: the vial spins across the screen and the blast plays; all five specials still fire; Mileena vs Noob
+  unaffected; 10,000 frames of random input with special inputs, no freeze. Screenshot: deliverables/batman_explosive.png.
