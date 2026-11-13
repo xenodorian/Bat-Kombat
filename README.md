@@ -73,6 +73,15 @@ Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents th
   25 frames (Batman Returns 24, was 17). Jump airtime is 38 frames (Batman Returns about 40), left as is.
   Damage is UMK3's.
 
+## Novice tower
+
+On the Novice tower ("Choose your destiny", leftmost) the CPU opponents are much slower than in the original:
+they stand for 3.5 to 8 seconds before each decision and answer only 1 in 4 of the player's moves on the spot
+(`tools/novice_ai_patch.py`). Measured against an idle player: about 3 to 6 CPU attacks per minute instead of
+20 to 40, and 70 to 150 damage per minute instead of 580 to 860. Warrior and both Master towers are
+unchanged. The OPTIONS difficulty setting is unchanged; in this game it only sets the lowest AI level the game
+allows when it moves the level up (after a won fight) or down (after a lost one).
+
 ## What is still borrowed
 
 - Normal moves and damage are Rain's. The specials above are other ninjas' code.

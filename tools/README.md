@@ -36,6 +36,8 @@ How the common questions were answered. Each step names the tool.
 - **How long is each animation frame shown?** `rig/pose_timing.py ROM` (standard set) or `--p1 Y`; compare with
   `rig/br_actions.py` for Batman Returns. Which sleep or loop makes the time: `rig/sleep_trace.py ROM --p1 Y`.
 - **Which sounds play?** `rig/sound_events.py ROM --p1 Y` (UMK3 requests and DSP key-ons with pitch).
+- **How aggressive is the CPU?** `rig/cpu_attack_rate.py ROM --tower 0 --opp 15 --p1 script` (attacks and
+  damage per minute; the AI, tower and difficulty variables are in `novice_ai_patch.py`).
 - **Does a build crash?** `rig/liveness.py SEED ROM` for seeds 1-6 (counts frames still running ROM code;
   a crashed game can still change the picture, so frame comparison is not enough).
 - **Does a special or finisher work?** `rig/exp.py` films moves put into Rain's table; `rig/fat.py` reaches
@@ -75,6 +77,7 @@ How the common questions were answered. Each step names the tool.
 | `rig/who_writes.py` | Code that writes, reads or executes an address while an input is held. |
 | `rig/pose_timing.py` | Frames shown per sprite frame for buttons, specials and being hit. |
 | `rig/sleep_trace.py` | UMK3 animation sleeps (`$88:C637`) and counted holds (`$86:8B7E`) per thread. |
+| `rig/cpu_attack_rate.py` | One-player fight against the CPU on any tower, any opponent (`--opp`), any AI level (`--level`): CPU attacks per minute, frames between attacks, damage taken per minute, with an idle or scripted P1. |
 | `rig/sound_events.py` | UMK3 sound requests (`$84:FE62`) and DSP key-ons (sample, pitch, volume). |
 | `rig/br_actions.py`, `rig/br_pose_match.py` | Play each Batman Returns control and match every frame to the ripped poses (exact sprites). |
 | `analysis/*.py` | One-off scripts from the first sprite-engine investigation (OAM record formula, tile sources, Y tables). Kept as a record; findings in `Current_Work.md`. |
@@ -102,6 +105,7 @@ Each module's docstring explains the game mechanism it patches and how it was fo
 | `exhirom.py` | 4 MB HiROM to 8 MB ExHiROM, free-space allocator, checksum. |
 | `batman_moves_patch.py` | Batman's special moves and finishers (move table format documented inside). |
 | `batman_controls_patch.py` | Batman Returns buttons for Batman only, during fights (pad reads at `$80:FDCE` / `$80:FDDC`). |
+| `novice_ai_patch.py` | Novice tower only: the CPU pauses 3.5-8 s before each AI decision and answers 1 in 4 of the player's moves (hooks at `$81:ACBC` and `$81:C186`). Documents the tower, difficulty and AI level variables. |
 | `batman_timing_patch.py` | Batman Returns walk speed and frame timing (sleep hook at `$88:C637`, walk tables). |
 | `batman_sound_patch.py` | Batman Returns samples on donor sound ids, Batman only. |
 | `move_list_patch.py` | Move list screen before round 1; also the small `Asm` helper (labels, branches) other patches use. |
