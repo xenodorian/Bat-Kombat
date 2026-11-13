@@ -38,6 +38,7 @@ import vs_portrait
 import batman_sound_patch
 import batman_timing_patch
 import batman_controls_patch
+import batman_pause_patch
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NINJA_SET = 27
@@ -448,6 +449,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     sound_info = batman_sound_patch.patch(rom, alloc, put)
     timing_info = batman_timing_patch.patch(rom, alloc, put)
     controls_info = batman_controls_patch.patch(rom, alloc, put)
+    pause_info = batman_pause_patch.patch(rom, alloc, put)
 
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
@@ -481,7 +483,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     exhirom.fix_checksum(rom)
 
     if report is not None:
-        report.update(timing=timing_info, controls=controls_info, sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
+        report.update(timing=timing_info, controls=controls_info, pause=pause_info, sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
                       mapped_frames=len(frame_map), header="%02X:%04X" % (cbank, h_addr),
                       last_bank="%02X" % alloc.bank, palette=palette,
                       lost={"%d%s" % (i, "f" if fl else ""): p.lost for (i, fl), p in poses.items() if p.lost},

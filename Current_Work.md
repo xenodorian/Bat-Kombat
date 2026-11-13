@@ -1241,3 +1241,75 @@ Walking in and pressing B deals 24 damage. B + Y still dashes (Cape Charge, +325
   and `analysis/*.py` (which also pointed at another machine's /home/claude). Defaults are now `build/` with
   `UMK3_ROM`, `BR_ROM`, `DELUXE_ROM`, `SNES9X_CORE`, `DBG_CORE` overrides. Docstrings added where missing.
 - Not rerun after the path change: deluxe_diff.py (needs the Deluxe ROM, not in the repo), analysis/*.py.
+
+## 2026-11-13: START pause with the move list (owner's request)
+
+Found with the debugger (original ROM unless said otherwise):
+- START in a fight does nothing: after START, holding Right still walks (x 496 -> 655 in 60 frames).
+- The game has a pause in its main loop at `$88:A869`: `lda $3C12 / beq`, then `$36C0 == 2` and START held on either
+  pad (`$3662 | $3664`, bit `$1000`). It sets `$3A68 = 1`, saves the frame counter `$1A0E` in `$1A10` and busy-waits
+  for START released, pressed, released. `$3C12` is only set by the kombat kode "GAME PAUSE ENABLED" (kode table
+  `$85:EA3E`). Poking `$3C12 = 1`: START freezes the fight (x stays 496 with Right held for 60 frames) and a second
+  START resumes it. No text is drawn.
+- Button presses are also events: the IRQ pushes them on a stack (`$3556`, `$88:ACA8`/`$88:AD11`), the main loop pops
+  them (`$88:A8E8`) and calls handlers from `$88:A918`. START on pad 1 is `$88:A978`, on pad 2 `$88:A986`; they start
+  process `$85:9759`/`$85:9766` (challenger join for an idle pad, nothing for a pad whose player is in:
+  `$36C6`/`$388A == 1`).
+- The main loop counts iterations in `$2480`, and `$80:FE66` refreshes the random table `$7F:0000 + ($2480 & $FF)`.
+  A first version of the patch hooked `$88:A869`; with it `tools/rig/pose_timing.py` gave different runs (Batarang
+  recovery 30 frames instead of 5 on one run) because the extra cycles changed the random numbers. The hook is now in
+  the START handlers, which run only when START is pressed.
+- Fight video: mode 1, BG3 is the HUD. HDMA channels 2-7 switch TM, BG1/BG3 bases and the scrolls at line 42
+  (tables `$88:B55E`, `$88:B565`, `$88:B5A2` and in RAM at `$7E:E9CA-$EA4A`). BG3 tilemap is at VRAM word `$1000` on the
+  three stages seen; its character base differs per stage (`$1000`, `$3000`, `$4000`), see `$7E:EB76`/`$EB77`.
+- VRAM reads: after setting `$2116`, the first word read returns the latch and the latch is loaded again from the same
+  address, so one dummy read is needed before a DMA read (snes9x source `ppu.cpp`; bsnes behaves the same, checked).
+- `$7E:3A7E` is not 0 in every fight: 0, 5 and 1 were seen on three stages. `tools/batman_controls_patch.py` tests
+  `$3A7E == 0`, so on the other stages Batman has UMK3's buttons: in a stage-5 fight R ran (frames 105-110) and B + Y
+  moved 0 px (338 px on the stage-0 fight). Not fixed here (other module); a fix would test `$36C0 == 2` instead.
+
+What changed: new `tools/batman_pause_patch.py`, called from `build_batman.py` after the controls patch.
+- JML at `$88:A978` and `$88:A986` (both bank copies) to new code in expanded ROM (`alloc`, 4002 bytes with font and
+  tilemap). It pauses when a fighter is Batman (`$52C8` or `$52CA` low byte 24), `$36C0 == 2`, the pressing pad's
+  player is in the game and START is still held; otherwise it runs the original handler.
+- While paused: `$3A68 = 1` and the frame counter are handled like the game's pause; the BG3 tilemap (2 KB) and the
+  BG3 tiles 960-1023 (1 KB) are saved to `$7F:F400-$7F:FFFF` by DMA; the font (46 tiles from the game's text font
+  `$D4:C5A9`, 2bpp) and a full-screen tilemap are written; HDMA is off, only BG3 is shown, the backdrop is black.
+  START (either pad in the game) resumes: VRAM, BG3 registers and the IRQ shadows (`$1A18`, `$1A1A`, `$1A1C`,
+  `$1A1E`, `$1A24`) are restored, and the button events queued during the pause are dropped.
+- Text: `move_list_patch.lines()` (from `batman_moves_patch.MOVE_LIST`), FORWARD written FWD when a line is over 30
+  columns, one line per 16 pixels, title in the timer's gold. Screenshot: `deliverables/batman_pause_move_list.png`.
+- RAM: `$7F:F3F0-$7F:FFFF` only. Checked with read and write watches: random two-player runs of 8000 frames (seeds 1,
+  3, 4, 6) and 6000 frames of a one-player game touch it only on screen 17 (between matches), 934 reads and 3344
+  writes per visit, every read of a byte written earlier in the same visit. No access in fights.
+- No new fixed area in bank `$FF`.
+
+Checked (snes9x debug core unless said):
+- Batman vs Noob, two players, three stages (`$3A7E` 0, 5 and 1), START on pad 1 and on pad 2: the list shows, the
+  game is frozen (over 120 paused frames with Right held only 13-17 WRAM bytes change: stack, IRQ direct page, pad
+  words and the event stack pointer; positions, timer and health do not), START resumes and the fight goes on
+  (walking works). The saved tilemap and font slot equal VRAM at the first paused frame and are written back exactly;
+  outside them no VRAM changed on the stage-0 fight, and only sprite tiles (`$C400-$CDFF`, `$E000-$E0AC`, the game's
+  queued sprite uploads) on the others. Frames after the resume equal a run without the pause in 94-104 of 107
+  frames (the differences are idle-animation frames of the fighters, which use random numbers, and the main loop
+  runs fewer times while paused; the game's own pause gives 101 of 107), HUD lines identical in 106-107 of 107.
+  Against the CPU the fight goes differently after any pause (46 of 107 with this one, 34 of 107 with the game's).
+- One-player game (Batman vs Reptile, CPU): pad 1 START pauses and resumes; pad 2 START lets a challenger join as in
+  UMK3 (no pause).
+- No Batman (fighters 19 vs 23): identical to the original ROM, START does nothing (x 496 -> 655), and with the pause
+  kode the game's own pause works (x stays 496, resumes to 622).
+- Batman with the pause kode on: one pause (the list showed in the test), no second pause after the resume.
+- Buttons tapped while paused: nothing happens after the resume (sprite ids stay 127-132); the game's own pause
+  replays them (attack frames 56-58).
+- Stress: 4 seeds x 8000 frames of random two-player input with 46-48 random START pairs on random pads (fights,
+  round ends, tower, between matches): 10-18 pauses, all with `$36C0 == 2`, game alive 300 of 300 frames after.
+- `tools/rig/liveness.py` seeds 1-6: 300, 300, 266, 300, 300, 266. The build before this patch gives the same numbers
+  on the same state (seeds 3 and 6 are frame-identical: 0 of 3307 and 0 of 3301 frames differ, same final RAM). In
+  both, the match ends inside the idle window and about 34 frames of the screen change do no ROM data reads; the
+  game then goes on to the tower screen. So this is the tool's limit, not a hang; it is not new.
+- `tools/rig/pose_timing.py`: output identical to the build before this patch (same save state).
+- bsnes-mercury accuracy: the list shows, BG3 tilemap restored (0 bytes differ), HUD lines identical after resume.
+
+Not checked: real hardware, Mesen; stages other than the three above; pausing during FINISH HIM, fatalities or a
+round intro on purpose (only what the random stress run hit); Batman vs Batman; later fights of the one-player
+ladder; how the font reads to a person on a TV.

@@ -63,6 +63,16 @@ in the match (`tools/move_list_patch.py`):
 
 Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents the move table format.
 
+**Pause with the move list.** In a fight that has Batman in it (either side), START pauses the fight and shows
+the same list (from the same source as the screen above); START again resumes. Any pad whose player is in the
+game can pause and resume; in a one-player game the idle pad's START still lets a challenger join, as in UMK3.
+The fight is frozen exactly as in the game's own pause (kombat kode "GAME PAUSE ENABLED"), the stage and HUD are
+hidden behind a black screen while the list is up, and come back unchanged. Buttons pressed while paused do
+nothing on resume. Matches without Batman keep UMK3's behaviour: START does nothing unless the pause kode is on
+(`tools/batman_pause_patch.py`).
+
+![Pause with the move list](deliverables/batman_pause_move_list.png)
+
 ## Collision, speed and timing
 
 - Batman has his own collision boxes. UMK3's rule is box = drawn sprite, so each Batman frame's box is the full
@@ -123,7 +133,7 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 
 - `tools/README.md`: catalog of every tool (emulator harness, debugger, disassembler, RAM and timing probes,
   asset extractors, ROM patches) with setup and recipes, for anyone continuing the work.
-- `tools/build_batman.py`, `batman_moves_patch.py`, `move_list_patch.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
+- `tools/build_batman.py`, `batman_moves_patch.py`, `move_list_patch.py`, `batman_pause_patch.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
 - `tools/umk3_sprites.py`, `capture_set_frames.py`, `record_actions.py`, `review_map.py`, `action_sheet.py`, `dis65.py`: analysis and tests.
 - `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.
 - `art/batman_poses.tar.gz`: 100 Batman poses (a sprite rip of Batman Returns). `art/batman_frame_map.json`, `art/ninja_frames.json`: mapping data.

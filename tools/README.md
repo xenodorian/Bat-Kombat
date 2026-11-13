@@ -105,6 +105,7 @@ Each module's docstring explains the game mechanism it patches and how it was fo
 | `batman_timing_patch.py` | Batman Returns walk speed and frame timing (sleep hook at `$88:C637`, walk tables). |
 | `batman_sound_patch.py` | Batman Returns samples on donor sound ids, Batman only. |
 | `move_list_patch.py` | Move list screen before round 1; also the small `Asm` helper (labels, branches) other patches use. |
+| `batman_pause_patch.py` | START pauses a fight that has Batman in it and shows the move list (START handlers `$88:A978` / `$88:A986`, BG3 save and restore). |
 | `roster_portrait_patch.py`, `vs_portrait.py`, `tower_face_patch.py`, `hud_name_patch.py` | Portraits, tower face, HUD name. |
 | `make_batman_fighter.py`, `make_batman_reskin.py`, `batman_vram_test.py` | Earlier approaches: a sprite overlay at the OAM DMA, a palette and name reskin, a VRAM drawing proof of concept. Superseded by `build_batman.py`; kept as a record. |
 
