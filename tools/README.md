@@ -37,8 +37,11 @@ How the common questions were answered. Each step names the tool.
   `rig/br_actions.py` for Batman Returns. Which sleep or loop makes the time: `rig/sleep_trace.py ROM --p1 Y`.
 - **Which sounds play?** `rig/sound_events.py ROM --p1 Y` (UMK3 requests and DSP key-ons with pitch).
 - **Does a build crash?** `rig/liveness.py SEED ROM` for seeds 1-6 (counts frames still running ROM code;
-  a crashed game can still change the picture, so frame comparison is not enough).
-- **Does a special or finisher work?** `rig/exp.py` films moves put into Rain's table; `rig/fat.py` reaches
+  a crashed game can still change the picture, so frame comparison is not enough). A count below 300 is not
+  always a crash: right after a match ends the game spends about 47 frames without ROM data reads (measured on
+  the release and on later builds), so check where the run ended before calling it a crash.
+- **Does a special or finisher work?** `rig/move_check.py ROM` checks every move-list input in every mode (run it
+  after any change to controls or moves); `rig/exp.py` films moves put into Rain's table; `rig/fat.py` reaches
   FINISH HIM and films a finisher input.
 - **Which graphics does a frame use?** `trace_dma.py`, `vram_blockfill_test.py`, `capture_set_frames.py`,
   `umk3_sprites.py` (decodes the sprite set format from ROM).
@@ -73,6 +76,7 @@ How the common questions were answered. Each step names the tool.
 | `record_actions.py`, `action_sheet.py` | Which sprite frames P1 shows for each action; contact sheets. |
 | `rig/ram_scan.py` | RAM words that change steadily while an input is held. |
 | `rig/who_writes.py` | Code that writes, reads or executes an address while an input is held. |
+| `rig/move_check.py` | Every move-list input (and negative cases) in 1P and 2P, as P1 and P2, rounds 1 and 2, several stages and at FINISH HIM; pass/fail table. Identifies specials by the matcher's handler, normals by sprite frame. |
 | `rig/pose_timing.py` | Frames shown per sprite frame for buttons, specials and being hit. |
 | `rig/sleep_trace.py` | UMK3 animation sleeps (`$88:C637`) and counted holds (`$86:8B7E`) per thread. |
 | `rig/sound_events.py` | UMK3 sound requests (`$84:FE62`) and DSP key-ons (sample, pitch, volume). |
@@ -117,3 +121,6 @@ Each module's docstring explains the game mechanism it patches and how it was fo
 - A hook that overwrites part of an instruction must redo the overwritten instructions itself and resume after
   them (see `batman_timing_patch.py`).
 - Verify every build with `rig/liveness.py` seeds before calling it done.
+- `$7E:3A7E` is the stage number, not a screen mode. "A fight is on" is `$7E:36C0 == 2` (the game's own pause test).
+- Rig save states are only valid for the exact ROM they were made on (`lab.py` caches by file name: delete
+  `build/rig/` after a rebuild; `move_check.py` caches by ROM hash).

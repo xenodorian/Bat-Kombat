@@ -21,8 +21,15 @@ How the game stores special moves (found with the debugger, see Current_Work.md)
 
 Bank $82 has almost no free space, so this patch puts a copy of the matcher and one table holding all of
 Batman's records in bank $FF. Every button entry of fighter 24 points to one 4-byte stub in bank $82
-(written over Rain's old table at $82:EA7C) that jumps to the copy. Records for a button other than the one
-pressed are refused by the game's own "no other attack button held" test.
+(written over Rain's old table at $82:EA7C) that jumps to the copy.
+
+The game enters a button's table with X = that button's index (0 HP, 2 LP, 4 BLOCK, 6 HK, 8 LK, 10 RUN, checked
+with the debugger), and the matcher copy skips every record whose button offset is not $30 + X. Without that
+test, records of other buttons were refused only by the game's "no other attack button held" test ($82:D1D4),
+which passes once the pressed button is already released: a Y press of a frame or two fired the no-motion
+Cape Charge. After a successful sequence test the copy goes straight to the condition, as the original does:
+the sequence test already ran $82:D1D4 and leaves X = player index, so calling $82:D1D4 again (as the first
+version did) refused A-button finishers (Friendship, stage fatality) for player 2.
 """
 import struct
 
@@ -41,7 +48,7 @@ _MIRROR = {"U": "U", "D": "D", "L": "R", "R": "L"}
 # name, button, kind, condition, handler, window, sequence (press order, facing right; L = back, R = forward)
 # Batman plays with these fight buttons (batman_controls_patch.py): Y = high punch, B = low punch,
 # X = high kick, A = low kick, L or R = block, B + Y = the run button. Jump is Up. A window of 0 means
-# no motion: the button alone.
+# no motion: the button alone. The matcher copy only tries the records of the button that was pressed.
 MOVES = [
     ("Smoke Teleport",  HP, 1, 0xDCC9, 0xC883, 0x18, "DL"),    # Scorpion's teleport punch
     ("Grapple Gun",     HP, 0, 0xDD1A, 0xC9A2, 0x14, "LL"),    # Scorpion's spear
@@ -75,6 +82,7 @@ MOVE_LIST = [
     ("Fatality 2", "Forward, Forward, Down, Y"),
     ("Babality", "Forward, Back, Back, Y"),
     ("Friendship", "Back, Forward, Forward, A"),
+    ("Stage fatality", "Forward, Down, Forward, A"),
 ]
 
 
@@ -89,6 +97,7 @@ def matcher(base, table_addr):
     from move_list_patch import Asm
     bank = base >> 16
     a = Asm(base)
+    a.b(0xDA)                                                       # phx: the pressed button (0 HP .. 10 RUN)
     a.b(0xA9, table_addr & 255, table_addr >> 8, 0x85, 0x42)        # lda #table / sta $42
     a.branch(0x80, "common")
     a.label("next")
@@ -99,28 +108,33 @@ def matcher(base, table_addr):
     a.branch(0xB0, "exit")
     a.b(0xA7, 0x42)                                                 # lda [$42]
     a.branch(0xF0, "exit")
-    a.b(0xAA, 0xA0, 0x08, 0x00, 0xB7, 0x42, 0x29, 0xFF, 0x00)       # tax / ldy #8 / lda [$42],y / and #$FF
+    a.b(0xAA, 0x38, 0xE9, 0x30, 0x00, 0xC3, 0x01)                   # tax / sec / sbc #$30 / cmp 1,s:
+    a.branch(0xD0, "next")                                          # only records of the pressed button
+    a.b(0xA0, 0x08, 0x00, 0xB7, 0x42, 0x29, 0xFF, 0x00)             # ldy #8 / lda [$42],y / and #$FF
     a.branch(0xF0, "skipseq")
     a.b(0x18, 0xA5, 0x42, 0x69, 0x08, 0x00, 0x85, 0x36)             # $36 = $42 + 8
     a.b(0xA9, bank, 0x00, 0x85, 0x38)                               # $38 = bank
     a.jsl(0x82CFFD)                                                 # sequence test, entered after its bank setup
     a.branch(0x90, "next")
-    a.label("skipseq")
+    a.branch(0x80, "cond")                                          # passed: it already did the button test
+    a.label("skipseq")                                              # (and left X = player index, not the button)
     a.jsl(0x82D1D4)                                                 # x = button: refuse if another attack button
-    a.branch(0xD0, "next")                                          # is held (the sequence test does this itself)
+    a.branch(0xD0, "next")                                          # is held
+    a.label("cond")
     a.b(0xA0, 0x04, 0x00, 0xB7, 0x42)                               # ldy #4 / lda [$42],y
     a.branch(0xF0, "run")
     a.b(0x8D, 0x00, 0x1A, 0xA9, 0x82, 0x00, 0x8D, 0x02, 0x1A)       # condition routine address at $1A00
     a.jsl(0x88C7E1)
     a.branch(0x90, "next")
     a.label("run")
+    a.b(0xFA)                                                       # plx (drop the pressed button)
     a.b(0xA0, 0x02, 0x00, 0xB7, 0x42, 0x0A, 0xAA)                   # x = kind * 2
     a.b(0xE2, 0x20, 0xA9, 0x82, 0x48, 0xC2, 0x20)                   # push bank $82
     a.b(0xBF, 0x87, 0xD3, 0x82, 0x3A, 0x48)                         # lda $82D387,x / dec / pha
     a.b(0xA0, 0x06, 0x00, 0xB7, 0x42)                               # a = handler
     a.b(0x6B)                                                       # rtl = jump to the kind routine
     a.label("exit")
-    a.b(0x6B)
+    a.b(0xFA, 0x6B)                                                 # plx / rtl
     return a.done()
 
 
