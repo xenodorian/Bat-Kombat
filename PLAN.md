@@ -54,6 +54,11 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | Round wins | `$7E:36E0` (P1), `$7E:38A4` (P2). Seen 0 -> 1 after one round win. Not yet used. |
 | Round number (candidates) | `$7E:3A90` or `$7E:3ACA`, both went 1 -> 2. Not yet told apart. |
 | Tower face hook and data | `$FF:E480` code, `$FF:E500-$EAFF` face tiles, hook at `$86:DD83` |
+| Difficulty (OPTIONS screen) | `$7E:3A8C`: 0 Very Easy to 4 Very Hard, default 2 set at `$80:8440`; not read during a fight |
+| Tower chosen at "Choose your destiny" | `$7E:3A94`: 0 Novice, 1 Warrior, 2 Master, 3 the tallest tower (also labelled MASTER); stored at `$86:91BA` |
+| AI level | `$7E:3A8A` (0-9): set from the tower at `$86:9ECC` (table `$86:9EE4`), +1 after a won fight and -1 after a lost one at `$85:A8D0`, floor table `$85:A944` [difficulty][tower] |
+| CPU decision and reactions | decision `$81:ACAC` (from `$82:BA71`), reaction check `$81:C171` (table `$81:C227`), chance roll `$80:FEFB` (A/1024) |
+| Novice AI hooks | `$81:ACBC` (pause before each decision) and `$81:C186` (reaction gate), code in expanded ROM (`47:05BD` in the current build), `tools/novice_ai_patch.py` |
 | Free space left in bank `$FF` | `0x3FDCB7-0x3FDCFF`, after the move list (`about 0x3FDE80`) to `0x3FDFFF`, `0x3FE290` to `0x3FE3FF` (check), `0x3FE440-0x3FE47F`, `0x3FEB00-0x3FEFFF` |
 | Free space in bank `$82` | `$82:FF0B-$FF70`, `$82:EA80-$EAD3` |
 
@@ -79,6 +84,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | H | Small face on the one-player tower ("Choose your destiny") | done 2026-11-12 (tools/tower_face_patch.py) |
 | I | Batman Returns controls for Batman | done 2026-11-13; 2026-11-12 B -> Up removed so B stays low punch and jump stays Up |
 | J | Boxes fit the sprites; Batman Returns speed and timing | done 2026-11-13: full drawn bounds; walk, punch, Batarang, block, hit reaction (tools/batman_timing_patch.py) |
+| K | Slower CPU opponents on the Novice tower (owner's request) | done 2026-11-13 (tools/novice_ai_patch.py): CPU attacks per minute down 3.9x to 9x on Novice, other towers unchanged; numbers in Current_Work.md |
 
 ## Steps, in order
 

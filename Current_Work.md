@@ -1241,3 +1241,91 @@ Walking in and pressing B deals 24 damage. B + Y still dashes (Cape Charge, +325
   and `analysis/*.py` (which also pointed at another machine's /home/claude). Defaults are now `build/` with
   `UMK3_ROM`, `BR_ROM`, `DELUXE_ROM`, `SNES9X_CORE`, `DBG_CORE` overrides. Docstrings added where missing.
 - Not rerun after the path change: deluxe_diff.py (needs the Deluxe ROM, not in the repo), analysis/*.py.
+
+## 2026-11-13: slower CPU opponents on Novice (owner's request)
+
+Owner: on Novice the CPU attacks so fast and often that only spamming cheap moves wins. Slow it down drastically
+on Novice only. New module `tools/novice_ai_patch.py` (its docstring has the full mechanism), new probe
+`tools/rig/cpu_attack_rate.py`.
+
+What "Novice" is (checked in the emulator):
+- OPTIONS has DIFFICULTY LEVEL: Very Easy, Easy, Medium, Hard, Very Hard = `$7E:3A8C` 0-4 (default 2, written at
+  `$80:8440`). Found by cycling the setting and diffing work RAM; the five names were read off the screen.
+  There is no "Novice" there.
+- NOVICE is the first tower at "Choose your destiny" (then WARRIOR, MASTER, and a tallest tower also labelled
+  MASTER). `$86:91BA` stores the choice in `$7E:3A94` (0-3), `$86:9ECC` sets the AI level `$7E:3A8A` from it
+  (0, 1, 2, 3; table `$86:9EE4`). Found by diffing RAM of fights started from each tower, then write watches.
+- During a fight only `$3A8A` is read (read watch: `$81:AD8C`, `$B081`, `$B0D4`, `$B17F`, `$B4D9`, `$B7D1` in
+  1200 frames); `$3A8C` was not read in a fight nor from the tower choice to the fight. After each fight
+  `$85:A8D0` moves the level +1 (player won) or -1 (player lost), never below the floor
+  `$85:A944`[difficulty][tower] (bytes: Very Easy 0,1,0; Easy 1,2,0; Medium 1,3,0; Hard 3,4,2; Very Hard 4,5,3 for
+  towers 0,1,2) and resets values above 9 to 5. So the options difficulty only sets the floor, and on Novice
+  the level climbs one step per win. Level tables are read by `$81:B7CA` (one word per level) and rolled by
+  `$80:FEFB` (carry set with probability A/1024).
+
+The CPU AI (found with exec watches on every call and jump in bank `$81`, write watches on P1 health and on the
+CPU thread's `$78`):
+- The CPU fighter thread (direct page often `$0800`, field `$7C` bit 0 clear) goes from the stance entry
+  `$82:BA4B` through `$82:BA71` to the decision `$81:ACAC`: stance (`$81:ACBC`), face the opponent (`$81:ACC0`),
+  then distance checks, level chances and random choices (`$81:B805` picks one of N handlers), then back.
+- Every walk or wait loop of the AI calls `$81:C171` each frame: when the opponent's action (`$78`) changes it
+  jumps to a reaction routine (table `$81:C227` by action group). The reaction is on the same frame.
+- Field `$78` groups: `$01xx` attacks, `$03xx` stance/walk/crouch/jump, `$05xx` being hit, `$06xx` attack
+  recovery, `$07xx` block. Hits do not go through the AI: the attacker redirects the victim thread (`$85:C6CC`).
+
+What changed (Novice only, `$7E:3A94` = 0; new code 79 bytes in expanded ROM, `47:05BD` in this build):
+- `$81:ACBC` `jsl $88:96A3` -> jml to new code: set the stance as before, then stand 210-479 frames (random, mean
+  about 345, 3.5-8 s) with the body of the game's own stand-still loop `$81:B3A4` (stance animation `$88:8C2B`,
+  reaction check `$81:C171`, `$86:8C42`, facing check `$86:8DCC` which ends the pause at once, sleep 1 frame),
+  then resume at `$81:ACC0`. Counter: `$32` of the CPU thread's direct page, the same use as the game's loop.
+- `$81:C186` `sta $66 / ldx $2A` -> jml to new code: a new opponent action gets a reaction only with probability
+  256/1024 (1 in 4); otherwise it is marked seen and `$81:C171` returns.
+- Both sites are also written in the bank `$00-$3F` copy (+0x400000). No new RAM, nothing in bank `$FF`.
+- First attempt hooked `$82:BA71` and paused before the stance was set (action `$0000`). With scripted P1
+  input a hit during that pause emptied the fight (fighters gone, black screen, game code still running) in 2 of
+  4 runs at AI level 6; the build without the patch did not do it. With the pause after the stance (as the game's
+  own pauses), 8 runs of 3600 frames on the final build (levels 0 and 6, seeds 1-4) had no such event.
+- Exec watch on the build: on Warrior and Master the Novice-only instructions ran 0 times in 3600 frames while the
+  tower test ran (53 and 38 decisions); on Novice they ran.
+
+Measurements (`tools/rig/cpu_attack_rate.py`, P1 Reptile at roster cell (1,0), opponent forced with `--opp`,
+3 minutes each, health refilled every frame and the clock wound back so the round never ends; idle P1 or the
+seeded random script; attack = CPU `$78` changes to `$01xx`). Original ROM -> this build:
+
+| Tower, opponent | P1 | CPU attacks/min | mean frames between attacks | P1 damage/min |
+|---|---|---|---|---|
+| Novice, Kitana (15) | idle | 28.7 -> 3.3 | 125 -> 745 | 668 -> 131 |
+| Novice, Kitana (15) | script | 24.0 -> 3.3 | 146 -> 990 | 467 -> 57 |
+| Novice, Reptile (19) | idle | 20.0 -> 3.7 | 178 -> 803 | 577 -> 151 |
+| Novice, Reptile (19) | script | 23.7 -> 2.7 | 139 -> 999 | 503 -> 41 |
+| Novice, Scorpion (18) | idle | 21.7 -> 2.7 | 165 -> 957 | 641 -> 70 |
+| Novice, Scorpion (18) | script | 22.3 -> 3.7 | 137 -> 603 | 448 -> 61 |
+| Novice, id 24 (Rain -> CPU Batman) | idle | 40.3 -> 6.3 | 88 -> 568 | 864 -> 140 |
+| Novice, id 24 (Rain -> CPU Batman) | script | 30.0 -> 3.3 | 114 -> 801 | 595 -> 46 |
+| Novice, Kitana, AI level 3 | script | 20.7 -> 5.3 | 170 -> 570 | 572 -> 150 |
+| Novice, Kitana, AI level 6 | script | 26.0 -> 3.3 | 130 -> 659 | 783 -> 169 |
+| Master, Kitana (15) | idle | 26.0 -> 24.0 | 138 -> 133 | 829 -> 785 |
+| Master, Kitana (15) | script | 16.7 -> 22.3 | 208 -> 154 | 450 -> 547 |
+| Master, Reptile (19) | idle | 31.0 -> 31.7 | 115 -> 113 | 731 -> 852 |
+| Master, Reptile (19) | script | 23.7 -> 21.3 | 140 -> 168 | 518 -> 540 |
+
+- Novice: 3.9x to 9x fewer attacks (3.4x to 7.2x longer mean gap), 3.8x to 13x less damage. Master: same range
+  as the original. The same build
+  without this patch gave 25.3, 15.7, 31.7, 21.7 attacks/min in the four Master rows, so the spread there is the
+  game's randomness. Runs from one saved state diverge between builds after about 145 frames (a one-frame shift
+  in P1's move start; the hook adds a few cycles of slow-ROM code), so exact replay comparison is not possible.
+- Every opponent id 0-24 on Novice, idle P1, 1 minute each: original 14-64 attacks/min (452-1035 damage/min),
+  build 0-7 attacks/min (47-176 damage/min). Id 11 (Sheeva) is not drawn when poked from the tower screen, so no
+  fight happened there on either ROM; not checked.
+- P1 Batman (cell (0,0)) vs CPU Reptile on Novice: idle 28.7 -> 3.0 attacks/min (790 -> 114 damage/min; the
+  original row has Rain in that cell); script on the build 1.7/min (28 damage/min), original 28.0/min.
+- Crash checks: `tools/rig/liveness.py` seeds 1, 2, 4, 5 report 300; seeds 3 and 6 report 266 on this build,
+  on the same build without this patch and on `release/Bat_Kombat.sfc` alike (the original ROM gives 285 on seed
+  3). Looked at seed 3: the 34 frames are a black screen transition after BATMAN WINS that leads to "prepare for
+  your next challenge", so the game is alive; the two-player check never runs the CPU AI anyway. One-player
+  check on Novice from a fight, random P1 input 15000 frames without health refill (fights won and lost, level
+  went 0 -> 5), seeds 1-3: 300 of 300 frames running ROM code.
+
+Not checked: the 4 player and 8 player modes (whether they have CPU fighters and what `$3A94` holds there), the
+fourth tower, Sheeva and the hidden opponents as CPU, real hardware, how the slower CPU feels in a full ladder
+played by a person.
