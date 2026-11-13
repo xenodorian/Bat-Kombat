@@ -49,6 +49,12 @@ in the match (`tools/move_list_patch.py`):
 
 Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents the move table format.
 
+## Collision and timing
+
+- Batman has his own collision boxes: UMK3's rule (box = drawn sprite) for his reach and height, UMK3's back edge
+  and floor line so his cape does not widen the box. Punch, Batarang and block display steps use Batman Returns'
+  frame counts (`tools/batman_timing_patch.py`). Hit windows, recovery and damage are UMK3's.
+
 ## What is still borrowed
 
 - Normal moves, hit boxes, damage and sounds are Rain's. The specials above are other ninjas' code.

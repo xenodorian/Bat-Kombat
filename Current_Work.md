@@ -1153,3 +1153,32 @@ counterpart: crouch and crouch attacks, ground kicks, sweep, uppercut, run, dizz
 Note: frame 41 (jump punch start) is shared with the Smoke Teleport flight, so the teleport now starts with pose 26.
 Checked on screen: deliverables/batman_animations_check.png (walk, punch, jump, forward jump, jump kick, block,
 batarang, cape charge) and batman_knockdown.png (hit by Noob's uppercut). Liveness seeds 1, 4, 6 alive.
+
+## 2026-11-13: collision boxes and timing ("practical fit", chosen by the owner)
+
+Found with the debugger:
+- Collision box per frame: the set header's box table (+8 bank, +9 and +14 address, both used). 4 signed bytes per
+  frame: left, right, top, bottom in object-local pixels, read at $88:A6DB into $4C98/$4FB0/$4980/$4668 per object.
+  For every original frame the box equals the drawn sprite's bounds exactly (checked on 18 ninja frames).
+  Until now Batman used Rain's table.
+- Animation scripts: per-fighter table at $88:95C3 + 4 * fighter (fighter 24 shares the ninja table at $C5:8010).
+  Scripts are lists of sprite ids; no durations. Move code steps them with $88:87DD and sleeps with $88:C637
+  (A = frames). Display steps are 2-6 frame sleeps; hit windows, recovery and hit stun are 1-frame loops or long
+  sleeps (game logic). Walk and jump timing are logic loops too.
+
+What changed:
+- Batman has his own box table (tools/build_batman.py). Batman Returns' collision data was not found, so the rule is
+  UMK3's own (box = drawn sprite) with one exception: his cape is drawn in the same colours as his body and would
+  widen the box far behind him, so the back edge and floor line stay UMK3's, the front edge reaches Batman's drawn
+  fist or foot, and the top is Batman's head. Batarang frames use their own drawn box.
+- tools/batman_timing_patch.py hooks $88:C637 (the hook redoes the routine's first three instructions, because the
+  4-byte JML also covers the pla at $C63A; an earlier version resumed at $C63A and the game never booted).
+  For fighter 24 on set-27 frames, listed (frame, original sleep) pairs get the Batman Returns value:
+  punch wind-up 2 frames (was 6) and retract 3 (was 5); Batarang wind-up 3, 2, 2 (was 3, 3, 3); block raise 4 (was 6).
+- Punch mapping fixed: UMK3 frame 58/101 is the held, extended frame and now shows pose 13 (wind-up 14 before it).
+
+Measured on the new build: HP 56 x1, 57 x1, 58 x8, 57 x1, 56 x2. Damage unchanged (punch 16, kick 18 both ways).
+All five specials fire. Liveness seeds 1, 4, 6 alive.
+Not changed, and why: hit windows, recovery, hit stun, walk and jump timing (game logic, changing them changes
+balance), damage values (owner's choice). Batman Returns' own hitboxes and damage were not ported.
+Sound: unchanged since the sound step; which sounds play still follows UMK3's events.

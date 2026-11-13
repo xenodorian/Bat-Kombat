@@ -36,6 +36,7 @@ import roster_portrait_patch
 import umk3_sprites
 import vs_portrait
 import batman_sound_patch
+import batman_timing_patch
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NINJA_SET = 27
@@ -281,8 +282,16 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
             poses[(i, flip)] = Pose(idx, store, (ax, ay))
         return poses[(i, flip)]
 
-    # frame records
-    records = {}
+    # frame records, and each frame's drawn box (lit colours only). See the box table below for how it is used
+    records, boxes = {}, {}
+
+    lit = np.array([i for i, c in enumerate(palette) if i > 1 and max(c) > 70])
+
+    def box_of(shown, ox, oy):
+        body = np.isin(shown, lit)
+        ys, xs = np.nonzero(body if body.sum() > 60 else shown)
+        c = lambda v: max(-128, min(127, int(v)))
+        return (c(ox + xs.min()), c(ox + xs.max()), c(oy + ys.min()), c(oy + ys.max()))
     for f in range(1, nframes + 1):
         m = frame_map.get(str(f))
         if m is None:
@@ -297,9 +306,12 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
         else:                                                     # feet (or back) on the same floor line
             oy = ny - p.feet[1] + int(m.get("dy", 0))
         records[f] = p.record(ox, oy)
+        boxes[f] = box_of(p.shown, ox, oy)
 
     for f, (i, x, y) in BATARANG.items():
-        records[f] = Pose(effect_index(poses_rgba[i]), store, (0, 0)).record(x, y)
+        bp = Pose(effect_index(poses_rgba[i]), store, (0, 0))
+        records[f] = bp.record(x, y)
+        boxes[f] = box_of(bp.shown, x, y)
     hook = np.array(Image.open(os.path.join(REPO, "art", "grapple_hook.png")))
     hook_words = [store.word(hook[:, 0:8], False), store.word(hook[:, 8:16], False)]
     for f, (hx, hy) in GRAPPLE.items():
@@ -358,7 +370,25 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
             frame_ptr += struct.pack("<H", raddr + offs[f])
     bank_tab += b"\x00" * (8 - len(bank_tab))
 
+    # collision box table: 4 signed bytes per frame (left, right, top, bottom), read at $88:A6DB
+    old_box = umk3_sprites.fo(ninja.header[8], ninja.header[14] | ninja.header[15] << 8)
+    # The engine's own rule is "box = drawn sprite bounds". Batman's cape is drawn in the same bright colours as
+    # his body and would widen the box far behind him, so for body frames: back edge and floor line stay UMK3's
+    # (Batman is aligned on the ninja's body), the front edge reaches Batman's drawn fist or foot, the top his head.
+    # Projectile frames (BATARANG) use their own drawn box.
+    box_tab = bytearray(rom4[old_box:old_box + 4 * nframes])
+    s8 = lambda v: v - 256 if v > 127 else v
+    for f, b in boxes.items():
+        l0, r0, t0, b0 = (s8(v) for v in box_tab[4 * (f - 1):4 * f])
+        nb = b if f in BATARANG else (l0, max(r0, b[1]), b[2], b0)
+        box_tab[4 * (f - 1):4 * f] = bytes(v & 0xFF for v in nb)
+    xbank, xaddr = alloc.alloc(len(box_tab))
+    put(xbank, xaddr, bytes(box_tab))
+
     header = bytearray(ninja.header)
+    header[8] = xbank                                         # box table bank, and its address at +9 and +14
+    struct.pack_into("<H", header, 9, xaddr)
+    struct.pack_into("<H", header, 14, xaddr)
     struct.pack_into("<H", header, 0, bt_addr)
     struct.pack_into("<H", header, 2, ts_addr)
     header[4] = cbank
@@ -423,6 +453,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
 
     # sounds: Batman Returns samples for the sounds Batman makes
     sound_info = batman_sound_patch.patch(rom, alloc, put)
+    timing_info = batman_timing_patch.patch(rom, alloc, put)
 
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
@@ -456,7 +487,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     exhirom.fix_checksum(rom)
 
     if report is not None:
-        report.update(sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
+        report.update(timing=timing_info, sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
                       mapped_frames=len(frame_map), header="%02X:%04X" % (cbank, h_addr),
                       last_bank="%02X" % alloc.bank, palette=palette,
                       lost={"%d%s" % (i, "f" if fl else ""): p.lost for (i, fl), p in poses.items() if p.lost},

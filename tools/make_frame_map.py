@@ -105,8 +105,8 @@ seq([41, 171], [34, 96])
 #   knockdown 60, 65, 61, 62 then 2, 3, 1           no crouch, no ground kick (Up/Down move in depth)
 # UMK3 actions with a Batman Returns counterpart now use it:
 seq(range(181, 189), [6, 7, 8, 8, 10, 11, 9, 9])                           # walk, BR order resampled to 8 frames
-seq([56, 57, 58], [14, 13, 14])                                            # high punch
-seq([99, 100, 101], [14, 13, 14])                                          # low punch
+seq([56, 57, 58], [14, 14, 13])                                            # high punch: 58 is the held, extended frame
+seq([99, 100, 101], [14, 14, 13])                                          # low punch
 seq([34, 73, 72], [27, 24, 24])                                            # jump take-off, straight jump, landing
 seq(range(63, 70), [30, 30, 30, 50, 23, 23, 24])                           # forward and back jump
 seq([39, 40, 70, 71, 41, 42], [26, 25, 26, 25, 26, 25])                    # jump kicks and jump punch
