@@ -77,7 +77,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | 2 | Roster portrait, health-bar name | done |
 | 3 | Specials: Batarang, Smoke Teleport, Grapple Gun, Explosive, Cape Charge, Spin Kick | done |
 | 4 | Move list screen before round 1 | done |
-| 5 | Two fatalities, babality, stage fatality | done (stage fatality and babality are Rain's, babality checked, stage fatality not checked) |
+| 5 | Two fatalities, babality, stage fatality | done (stage fatality and babality are Rain's; both checked 2026-11-13 with tools/rig/move_check.py, stage fatality on stages 2 and 6) |
 | 6 | BATMAN WINS banner | done |
 | 7 | VS screen portrait | done |
 | 8 | Mirror match palette | done |
@@ -93,7 +93,8 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | J | Boxes fit the sprites; Batman Returns speed and timing | done 2026-11-13: full drawn bounds; walk, punch, Batarang, block, hit reaction (tools/batman_timing_patch.py) |
 | K | Slower CPU opponents on the Novice tower (owner's request) | done 2026-11-13 (tools/novice_ai_patch.py): CPU attacks per minute down 3.9x to 9x on Novice, other towers unchanged; numbers in Current_Work.md |
 | L | START pauses and shows the move list (Batman in the match) | done 2026-11-13 (tools/batman_pause_patch.py); checked in snes9x and bsnes-mercury accuracy |
-| M | Batman Returns controls on every stage | open, found 2026-11-13: the controls remap tests `$7E:3A7E == 0`, which holds on one stage only; on stages with value 5 or 1, R runs and B + Y does no Cape Charge. Suggested fix: test `$7E:36C0 == 2` instead (not changed here) |
+| M | Batman Returns controls on every stage | fixed 2026-11-13 (see N); found 2026-11-13: the controls remap tests `$7E:3A7E == 0`, which holds on one stage only; on stages with value 5 or 1, R runs and B + Y does no Cape Charge. Suggested fix: test `$7E:36C0 == 2` instead (not changed here) |
+| N | Controls and move list work in every mode (R alone did the Cape Charge) | done 2026-11-13, fixes item M (the $3A7E controls bug): the remap tested the stage number $7E:3A7E instead of a fight flag, now $7E:36C0 = 2, 5 or 7; B + Y with a 3-frame window; matcher copy only tries the pressed button's records and no longer refuses A-button finishers for player 2. tools/rig/move_check.py: 0 failures in 6 modes |
 
 ## Steps, in order
 
@@ -196,8 +197,8 @@ been looked at. Skip unless the owner asks.
 - Run the release in bsnes or Mesen (more accurate than snes9x). Things to watch: the 8 MB ExHiROM header,
   the hook timing, the VS screen.
 - Checked 2026-11-12: Noob Saibot's win banner, FINISH HIM and FATALITY draw correctly from the set-19 copy.
-- Stage fatality on a pit stage (not checked: the stage could not be chosen from the harness), friendship off, every other fighter's win banner (set 19 frames 65 to 97
-  were copied), one-player ladder to the end.
+- Stage fatality: checked 2026-11-13 on stages 2 and 6 (stage forced through `$7E:3A84`, see tools/rig/move_check.py).
+  Still open: every other fighter's win banner (set 19 frames 65 to 97 were copied), one-player ladder to the end.
 
 ### H. Tower portrait
 

@@ -22,7 +22,7 @@ He takes Rain's slot (top-left cell of the fighter select grid).
 
 Batman uses Batman Returns buttons, except B stays low punch and jump stays Up. The remap applies only to a
 pad whose fighter is Batman, and only during a fight (`tools/batman_controls_patch.py`); everyone else keeps
-UMK3's buttons.
+UMK3's buttons. Pad 1 always plays the left fighter and pad 2 the right one, in one-player and two-player games.
 
 | Button | Batman Returns | Batman in UMK3 |
 |---|---|---|
@@ -30,7 +30,7 @@ UMK3's buttons.
 | B | jump | low punch (not remapped; kombos need it) |
 | A | batarang | Batarang, no motion needed |
 | L or R | cape block | block |
-| B + Y | cape spin | Cape Charge |
+| B + Y | cape spin | Cape Charge. The two need not land on the same frame: B or Y pressed alone waits up to 3 frames (50 ms) for the other, so a lone punch comes 3 frames late. Letting go of one of them first does not start a punch. |
 | X | nothing | high kick, kept so the kick finishers and Spin Kick have a button |
 | SELECT | nothing | nothing |
 | D-pad | walk; Up/Down walk in depth | walk; Down crouches, Up jumps |
@@ -47,9 +47,17 @@ Directions are for Batman facing right; mirror them when he faces left.
 | Spin Kick | Back + X | Rain's roundhouse (unchanged) |
 | Fatality 1 | Down, Down, Forward, X (close) | Ermac's uppercut decapitation |
 | Fatality 2 | Forward, Forward, Down, Y (close) | Ermac's lift and slam |
-| Babality | Forward, Back, Back, Y | Rain's (unchanged) |
-| Friendship | Back, Forward, Forward, A | generic friendship code; Batman stands still under the banner |
-| Stage fatality | Forward, Down, Forward, A | Rain's (unchanged) |
+| Babality | Forward, Back, Back, Y (no block used in the winning round) | Rain's (unchanged) |
+| Friendship | Back, Forward, Forward, A (no block used in the winning round) | generic friendship code; Batman stands still under the banner |
+| Stage fatality | Forward, Down, Forward, A (close, only on stage 2, the lava stage, and stage 6, the spiked-ceiling stage) | Rain's (unchanged) |
+
+Every line of this table, and the negative cases (R alone, L alone, button combinations, staggered B + Y,
+short taps), is checked by `tools/rig/move_check.py` as player 1 and player 2, in two-player fights and in the
+Novice, Warrior and Master towers, in rounds 1 and 2 and on stages 0 to 6.
+On the release before 2026-11-13, R alone did the Cape Charge on every stage except stage 0 (for example in
+round 2 of every match tested); see `Current_Work.md`.
+
+![Babality and stage fatalities](deliverables/batman_babality_stage_fatality.png)
 
 ![Fatality 1](deliverables/batman_fatality_1.png)
 ![Fatality 2](deliverables/batman_fatality_2.png)

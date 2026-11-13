@@ -17,7 +17,7 @@ import struct
 import batman_moves_patch
 
 CODE_AT = 0x3FDD00                 # $FF:DD00
-CODE_END = 0x3FE000
+CODE_END = 0x3FDF00                # $FF:DF00 is the sound patch override code (batman_sound_patch OVR_AREA)
 SITE_CHECK, SITE_PRINT = 0x05E834, 0x05E8E4
 SITE_CHECK_BYTES = bytes.fromhex("5cccc788")
 SITE_PRINT_BYTES = bytes.fromhex("ad0e3cf035")

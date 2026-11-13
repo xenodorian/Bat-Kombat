@@ -1400,3 +1400,134 @@ Checked (snes9x debug core unless said):
 Not checked: real hardware, Mesen; stages other than the three above; pausing during FINISH HIM, fatalities or a
 round intro on purpose (only what the random stress run hit); Batman vs Batman; later fights of the one-player
 ladder; how the font reads to a person on a TV.
+
+## 2026-11-13: controls and move list in every mode (owner: "R alone does the Cape Charge" on an R36S)
+
+Root cause (proven in the emulator, not on the device): the controls hook switched itself on with
+`$7E:3A7E == 0`, believed to be "screen mode 0 = fight". `$7E:3A7E` is the stage (background) number: `$80:84C8`
+sets it from `$7E:3A84` when a round is set up (5 when `$3A84` is 0), and `$82:D403` (stage fatality condition)
+compares it with stage numbers. Every earlier check ran in round 1 of a two-player fight, which is stage 0. On any
+other stage, which in every match tested includes round 2 (stage 5), the remap was off: R stayed the UMK3 run
+button, whose table holds the no-motion Cape Charge, and B + Y gave a low punch. Reproduced on the release ROM in
+one-player Novice (pad 1 and pad 2) and two-player fights, rounds 2, and stages 1, 2, 3, 4, 6. The pause agent
+found the same thing independently. It was not a one-player or pad-mapping problem: in round 1 on stage 0, 1P on
+pad 1 behaved correctly.
+
+Found on the way (all fixed):
+- Pressing B a frame or two before Y (or the reverse) gave a punch, and the Cape Charge only sometimes.
+- The matcher copy ($FF:E000) called `$82:D1D4` ("no other attack button held") again after a successful sequence
+  test, with X = player index instead of the button. For player 2 that refused Friendship and the stage fatality
+  (A button) with the Batarang firing instead. Present on the release; player 1 was not affected.
+- Records of other buttons were only kept out by `$82:D1D4`, which passes once the pressed button is already
+  released. With the B/Y hold-back below, a short Y press reached the matcher after release and fired the
+  no-motion Cape Charge. The game enters a button's table with X = button index (0 HP, 2 LP, 4 BLOCK, 6 HK,
+  8 LK, 10 RUN, seen at the stub `$82:EA7C` with the debugger), so the copy now only tries records whose button
+  offset is `$30 + X`.
+- `$7E:36C0` (game state) values: 2 round live (also FINISH HIM), 7 ROUND n / FIGHT intro, 5 round over,
+  6 tower and move list, 3 match over and continue screen, 9 roster, 4 / 13 attract and title.
+- Pad 1 always plays the left fighter and pad 2 the right one: 1P started on pad 1 puts Batman at `$52C8`, 1P
+  started on pad 2 at `$52CA`, and 2P both ways. So "this pad controls Batman" is the fighter id of the pad's
+  side; the human flag was not needed. The CPU does not read the pads, and a forced CPU Batman fired no matcher
+  specials in 6,000 frames on either build, so the matcher change does not touch the CPU.
+
+What changed:
+- `tools/batman_controls_patch.py` (hook in expanded space at `$47:055D`, 162 bytes, JSL at `$80:FDCE` and
+  `$80:FDDC` as before): on when `$7E:36C0` is 2, 7 or 5 and the pad side's fighter id is 24. R -> L.
+  B + Y -> R, and R stays held until both are released. B or Y pressed alone is held back up to 3 frames
+  (WINDOW): if the other arrives, it is B + Y; otherwise the punch is reported 3 frames late, or on release for
+  a shorter tap. Window choice: the pad latch can land a frame late, so 2 frames did not cover "Y two frames
+  after B"; 3 does. Cost: a lone low or high punch starts 3 frames (50 ms) later. Set WINDOW = 0 to remove it.
+  New work RAM: `$7E:1CF0` (pad 1) and `$7E:1CF2` (pad 2) hold-back state, `$7E:1CF4` scratch. Watched with read
+  and write watches from boot through attract, a 1P Novice match with random input, a loss and the continue
+  screen: `$7E:1C5B-$1CF7` was never read or written by the game (`$1CF8` is the sound patch's). DMA is not logged.
+  The state is cleared every frame the remap is off.
+- `tools/batman_moves_patch.py` matcher copy at `$FF:E000` (now 128 bytes, table `$FF:E080-$FF:E153`, still before
+  the sound hook at `$FF:E180`): phx at entry, records of other buttons skipped, `$82:D1D4` only for no-motion
+  records, plx on both exits.
+- Move list: added "Stage fatality: Forward, Down, Forward, A" (14 lines, shown on screen, bottom line at about
+  y = 215). `tools/move_list_patch.py` CODE_END is now `$FF:DF00`: the sound patch's override code sits at
+  `$FF:DF00-$FFFF`, and the old limit `$FF:E000` would not have caught an overlap. The list ends at `$FF:DEFE`.
+  The first line stays "Y punch, B low punch, X kick" (Y is high punch; "Y high punch" did not fit the area).
+- README move table: conditions for babality, friendship (no block in the winning round, condition `$82:D5B7`
+  tests `$3ADE`/`$3AE0` and `$3A92 == 3`) and the stage fatality (close, stages 2 and 6 only, condition `$82:D3FE`).
+- New test `tools/rig/move_check.py` (see its docstring). Modes: 2p1, 2p2 (two-player, Batman on pad 1 / pad 2),
+  1p1, 1p2 (Novice tower started on pad 1 / pad 2), 1p1w, 1p1m (Warrior, Master). States per mode: round 1,
+  round 2 (stage 5), round 2 with the stage forced to 1, 2, 3, 4, 6 through `$7E:3A84`, FINISH HIM after
+  winning round 2, FINISH HIM on stages 2 and 6, and inputs held from the round 2 intro into the fight.
+  Test hooks: the opponent's health is set to 1 before Batman's winning hits; Batman's health is kept full in
+  1P rounds; the next stage is poked for the stage tests.
+
+Results, 108 rows x 6 modes. Before = the release ROM (`release/Bat_Kombat.sfc`, identical to a build of
+commit edf4b87), after = this build: 184 failures before, 0 after. 71 rows passed in every mode before and after
+(normals, Batarang, the three motion specials, Spin Kick, SELECT, L + R, A combinations, short taps, round 1
+R and B + Y). Rows that differ ("p" pass, "F" fail, "-" state not reached: on the release the 1p1w FINISH HIM
+state could not be reached because the Warrior CPU kept blocking until time ran out):
+
+| Test [state] | before (2p1 2p2 1p1 1p2 1p1w 1p1m) | after |
+|---|---|---|
+| Cape Charge: B, Y 1 frame later [r1] | p F F F p F | all pass |
+| Cape Charge: B, Y 2 frames later [r1] | F F F F F F | all pass |
+| Cape Charge: Y, B 1 frame later [r1] | F F F F F F | all pass |
+| Cape Charge: Y, B 2 frames later [r1] | F F F F F F | all pass |
+| R: block (R alone) [r2] | F F F F F F | all pass |
+| R tapped [r2] | F F F F F F | all pass |
+| Cape Charge: B + Y [r2] | F F F F F F | all pass |
+| Cape Charge: B, Y 1 frame later [r2] | F F F F F F | all pass |
+| Cape Charge: B, Y 2 frames later [r2] | F F F F F F | all pass |
+| Cape Charge: Y, B 1 frame later [r2] | F F F F F F | all pass |
+| Cape Charge: Y, B 2 frames later [r2] | F F F F F F | all pass |
+| B + Y held, B let go first [r2] | F F F F F F | all pass |
+| B + Y held, Y let go first [r2] | F F F F F F | all pass |
+| R + Forward (no run) [r2] | F F F F F F | all pass |
+| Fatality 1: Down, Down, Forward, X [fin] | p p p p - p | all pass |
+| Fatality 2: Forward, Forward, Down, Y [fin] | p p p p - p | all pass |
+| Babality: Forward, Back, Back, Y [fin] | p p p p - p | all pass |
+| Friendship: Back, Forward, Forward, A [fin] | p F p F - p | all pass |
+| Stage fatality on a normal stage [fin] | p p p p - p | all pass |
+| R: block (R alone) [s1] | F F F F F F | all pass |
+| Cape Charge: B + Y [s1] | F F F F F F | all pass |
+| Cape Charge: B, Y 2 frames later [s1] | F F F F F F | all pass |
+| R: block (R alone) [s2] | F F F F F F | all pass |
+| Cape Charge: B + Y [s2] | F F F F F F | all pass |
+| Cape Charge: B, Y 2 frames later [s2] | F F F F F F | all pass |
+| R: block (R alone) [s3] | F F F F F F | all pass |
+| Cape Charge: B + Y [s3] | F F F F F F | all pass |
+| Cape Charge: B, Y 2 frames later [s3] | F F F F F F | all pass |
+| R: block (R alone) [s4] | F F F F F F | all pass |
+| Cape Charge: B + Y [s4] | F F F F F F | all pass |
+| Cape Charge: B, Y 2 frames later [s4] | F F F F F F | all pass |
+| R: block (R alone) [s6] | F F F F F F | all pass |
+| Cape Charge: B + Y [s6] | F F F F F F | all pass |
+| Cape Charge: B, Y 2 frames later [s6] | F F F F F F | all pass |
+| Stage fatality: Forward, Down, Forward, A [fin_s2] | p F p F p p | all pass |
+| Stage fatality: Forward, Down, Forward, A [fin_s6] | p F p F p p | all pass |
+| R held into the fight [round 2 start] | F F F F F F | all pass |
+
+Notes on rows: "B, Y 5 frames later" is outside the window and gives a low punch (the Cape Charge may follow it,
+as it already could on the release). "R held into the fight" holds R from the round 2 intro: block after the fix.
+The 2p1 "B, Y 1 frame later" passed on the release only because the press fell on the right side of the pad latch.
+
+Also checked:
+- Babality and both stage fatalities on screen (deliverables/batman_babality_stage_fatality.png): the opponent
+  becomes a baby; on stage 2 (lava) and stage 6 (spiked ceiling) Batman's uppercut sends the opponent off the top.
+  Stage names are not verified.
+- Move list screen with 14 lines: deliverables/batman_move_list.png.
+- Liveness (`tools/rig/liveness.py`) on this build: seeds 1, 3, 5, 7, 8 report 300; seeds 2, 4 and 6 report 266.
+  In those three runs the random input ends a match (round over, `$36C0` 5 -> 3): the 34 frames without ROM data
+  reads are all at `$36C0 == 3`, and the game then goes on to the roster (36C0 9) and, for seed 5 on an earlier
+  build of this change, into a new fight, seen on screen. A normal match end measured the same way gives 47 such
+  frames on the release and on this build. So these are not crashes, but the liveness count cannot tell a match
+  end from a crash.
+- One-player runs against the CPU from the Novice round 1 state: 20,000 frames of random input with special
+  inputs and START presses, seeds 1 and 2 (fights, continue screens, menus), 300 alive frames at the end of each;
+  12,000 frames with Batman's health held full (seed 3, fighting through the tower), 300 alive frames.
+
+Device side (R36S, ArkOS, RetroArch), not verified: the ROM fault above explains the report on any SNES core,
+since it only needs a fight on a stage other than 0. Other possible device effects: RetroArch maps the
+handheld's R1 to SNES R; if L2/R2 or a remap file send SNES R for another button, or a swapped A/B layout is
+active, buttons will differ from the move list. snes9x-based cores ignore RetroPad L2/R2. The ROM now behaves
+correctly for standard SNES input; checking the core's input settings on the device is left to the owner.
+
+Not checked: real hardware, other cores than snes9x on this change, kombat kodes together with the move list,
+the 4- and 8-player tournament modes, matches past the second tower fight with the full test set, babality after
+a round in which Batman blocked (the condition was read, not tested), the stage fatality from a distance.
