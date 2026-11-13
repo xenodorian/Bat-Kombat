@@ -42,9 +42,16 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | Sound hook | `$FF:E180` (after the move table) |
 | Pad reads (controls remap) | `$80:FDCE` pad 1, `$80:FDDC` pad 2, JSL to expanded ROM |
 | Walk tables | `$88:9729` forward, `$88:9799` back, 4 bytes per fighter: pose delay, speed (1/256 px) |
-| Screen mode | `$7E:3A7E`: 0 fight, 13 roster, 11 VS, 14 stage intro |
+| Screen mode | `$7E:3A7E`: 13 roster, 11 VS, 14 stage intro, 15 tower, 17 between matches. In fights it is not 0 on every stage: 0, 5 and 1 were seen on three different stages (2026-11-13), so it is not a reliable "fight" test; `$7E:36C0 == 2` is (the game's own pause uses it) |
 | Fatality jump tables | `$82:802D` (first), `$82:8065` (second), index fighter id * 2 |
 | Move list text and code | `$FF:DD00`, hooks at `$85:E834` and `$85:E8E4` |
+| Pause with move list | code, font and tilemap in expanded ROM (`alloc`, 4002 bytes, `$47:05BD` in the current build); JML at the START press handlers `$88:A978` (pad 1) and `$88:A986` (pad 2), both bank copies |
+| Pause scratch RAM | `$7F:F3F0-$7F:F3F3` (VRAM addresses), `$7F:F400-$7F:FBFF` (saved BG3 tilemap), `$7F:FC00-$7F:FFFF` (saved font slot). Used only while paused; the game uses `$7F:F000-$7F:FFFF` only as write-before-read scratch on screen 17 |
+| Button event stack | `$7E:3556` pointer (IRQ pushes at `$88:AD11`, main loop pops at `$88:A8E8`), handler table `$88:A918` |
+| Game's own pause | main loop `$88:A869`: kode flag `$7E:3C12`, `$7E:36C0 == 2`, START held; `$3A68` = 1, frame counter `$1A0E` saved in `$1A10` |
+| Pad player in the game | `$7E:36C6` (pad 1), `$7E:388A` (pad 2): 1 while that pad's player plays |
+| Fight BG3 (HUD) registers | `$7E:EB76` BG3SC, `$7E:EB77` BG34NBA (stage set-up `$84:92BE`); HDMA channels 2-7 split the screen at line 42 |
+| Main loop counter / random table | `$7E:2480` counts main loop iterations; `$80:FE66` refreshes `$7F:0000 + ($2480 & $FF)`. Extra cycles in the main loop change the random numbers |
 | VS portrait tables | `$83:EEFA` gfx, `$EF2E` map, `$EF62` palette, `$EEC6` bank, `$EE92` count, `$EFE6` mirror |
 | VS portrait loader | `$FF:E400`, replaces three calls to `$88:AD30` |
 | Banner set 19 copy | expanded ROM, set table entry 19 at `$86:EAEC` / `$86:EB24` |
@@ -85,6 +92,8 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | I | Batman Returns controls for Batman | done 2026-11-13; 2026-11-12 B -> Up removed so B stays low punch and jump stays Up |
 | J | Boxes fit the sprites; Batman Returns speed and timing | done 2026-11-13: full drawn bounds; walk, punch, Batarang, block, hit reaction (tools/batman_timing_patch.py) |
 | K | Slower CPU opponents on the Novice tower (owner's request) | done 2026-11-13 (tools/novice_ai_patch.py): CPU attacks per minute down 3.9x to 9x on Novice, other towers unchanged; numbers in Current_Work.md |
+| L | START pauses and shows the move list (Batman in the match) | done 2026-11-13 (tools/batman_pause_patch.py); checked in snes9x and bsnes-mercury accuracy |
+| M | Batman Returns controls on every stage | open, found 2026-11-13: the controls remap tests `$7E:3A7E == 0`, which holds on one stage only; on stages with value 5 or 1, R runs and B + Y does no Cape Charge. Suggested fix: test `$7E:36C0 == 2` instead (not changed here) |
 
 ## Steps, in order
 
