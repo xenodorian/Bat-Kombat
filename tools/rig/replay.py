@@ -1,3 +1,4 @@
+"""Seeded random two-player input runs, for crash tests (used by liveness.py). Usage: python3 replay.py SEED ROM [ROM...]"""
 import sys, os, random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lab

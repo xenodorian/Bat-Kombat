@@ -2,7 +2,7 @@
 """Static scanner: find data tables indexed by fighter ID in the UMK3 (USA) SNES ROM.
 
 Usage:
-    python3 -I /home/user/Bat-Kombat/tools/scan_id_tables.py [ROM_PATH] > report.txt
+    python3 -I tools/scan_id_tables.py [ROM_PATH] > report.txt     (default: UMK3_ROM or build/)
 
 Read-only. Prints the report to stdout.
 
@@ -32,8 +32,7 @@ sys.path.insert(0, TOOLS)
 import umk3rom as u  # noqa: E402
 from capstone import Cs, CS_ARCH_MOS65XX, CS_MODE_MOS65XX_65816_LONG_M  # noqa: E402
 
-DEFAULT_ROM = ("/tmp/claude-0/-home-user-Bat-Kombat/afe52c5f-a404-552a-b206-05bca1c438dc/"
-               "scratchpad/roms/umk3/Ultimate Mortal Kombat 3 (USA).sfc")
+DEFAULT_ROM = os.environ.get("UMK3_ROM", os.path.join(os.path.dirname(TOOLS), "build", "Ultimate Mortal Kombat 3 (USA).sfc"))
 N_IDS = 25
 NAME_TABLE_OFF = 0x3E544
 

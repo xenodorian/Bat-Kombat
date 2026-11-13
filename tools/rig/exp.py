@@ -14,7 +14,7 @@ def make(moves, bat, extra=None):
     if extra: extra(rom)
     open("exp.sfc","wb").write(rom)
     if bat:
-        subprocess.check_call([sys.executable,"-I","/home/user/Bat-Kombat/tools/build_batman.py","exp.sfc","batexp.sfc","--work",lab.S+"/../batman_work"],stdout=subprocess.DEVNULL)
+        subprocess.check_call([sys.executable,"-I",os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"build_batman.py"),"exp.sfc","batexp.sfc","--work",lab.S+"/batman_work"],stdout=subprocess.DEVNULL)
         return "batexp.sfc"
     return "exp.sfc"
 def film(romfile, inputs, out, tail=110, cols=6, step=14, first=4, p2=()):

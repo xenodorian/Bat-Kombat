@@ -120,6 +120,8 @@ frame capture, see below), then rebuild. `art/batman_frame_map.json` also accept
 
 ## Files
 
+- `tools/README.md`: catalog of every tool (emulator harness, debugger, disassembler, RAM and timing probes,
+  asset extractors, ROM patches) with setup and recipes, for anyone continuing the work.
 - `tools/build_batman.py`, `batman_moves_patch.py`, `move_list_patch.py`, `batman_art.py`, `exhirom.py`, `make_frame_map.py`: the build.
 - `tools/umk3_sprites.py`, `capture_set_frames.py`, `record_actions.py`, `review_map.py`, `action_sheet.py`, `dis65.py`: analysis and tests.
 - `tools/libretro_harness.py`, `dbg_core.py`, `umk3_nav.py`: emulator harness, debugger, menu navigation.

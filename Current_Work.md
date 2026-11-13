@@ -1217,3 +1217,15 @@ Charge (hits), SELECT nothing; DB+Y, BB+Y, DF+Y all fire and hit; Fatality 1, Fa
 move list screen shows the new buttons; Batman Returns sounds still key on. Liveness seeds 1-6 alive.
 Not checked: Batman as player 2 with the new buttons (same code, other pad), babality (needs its round
 conditions), stage fatality.
+
+## 2026-11-13: tools catalog for other agents (owner's request)
+
+- New `tools/README.md`: setup, recipes ("where is X in RAM", "what code sets it", timing, sounds, crash test),
+  and a table of every tool by purpose.
+- Scratch helpers used for the controls and timing work turned into general tools in `tools/rig/`:
+  `ram_scan.py`, `who_writes.py`, `pose_timing.py`, `sleep_trace.py`, `sound_events.py`. Each was run on the
+  current build (ram_scan found $7E:3DA8 at 1.744 px per frame; the others printed the expected traces).
+- Hardcoded session paths removed from `br_gameplay.py`, `deluxe_diff.py`, `scan_id_tables.py`, `rig/exp.py`
+  and `analysis/*.py` (which also pointed at another machine's /home/claude). Defaults are now `build/` with
+  `UMK3_ROM`, `BR_ROM`, `DELUXE_ROM`, `SNES9X_CORE`, `DBG_CORE` overrides. Docstrings added where missing.
+- Not rerun after the path change: deluxe_diff.py (needs the Deluxe ROM, not in the repo), analysis/*.py.

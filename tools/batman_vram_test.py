@@ -24,7 +24,7 @@ sys.path.insert(0, TOOLS)
 import libretro_harness as h
 import umk3_nav as nav
 
-CORE = "/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so"
+CORE = os.environ.get("SNES9X_CORE", "/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so")
 # Byte offsets tried as the OBJ tile base. $2101 picks one of these in practice.
 VRAM_BASES = (0x0000, 0x4000, 0x8000, 0xC000)
 

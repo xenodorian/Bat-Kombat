@@ -1,8 +1,11 @@
+"""Sprite-engine investigation (2026-10), kept as a record. Usage: python3 sample_base_words_jump_crouch.py [UMK3_ROM]. Findings: Current_Work.md."""
 import sys
-sys.path.insert(0,'/home/claude/bat-kombat/tools')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import dbg_core as d, umk3_nav as nav
-S=sys.argv[1]
-c=d.DbgCore(); c.load(S+'/roms_zip/Ultimate Mortal Kombat 3 (USA).sfc')
+ROM_PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'build', 'Ultimate Mortal Kombat 3 (USA).sfc')
+c=d.DbgCore(); c.load(ROM_PATH)
 nav.to_fight(c,0,0)
 c.run(2)
 def words():

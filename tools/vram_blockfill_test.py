@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import libretro_harness as h
 import umk3_nav as nav
 
-CORE = "/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so"
+CORE = os.environ.get("SNES9X_CORE", "/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so")
 
 
 def main(rom, outdir):

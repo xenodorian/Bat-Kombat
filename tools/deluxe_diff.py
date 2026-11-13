@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Diff UMK3 (USA) against UMK3 Deluxe v2.3. Read-only analysis.
 
-Outputs go to the scratchpad agents/deluxe_diff directory:
+Inputs: UMK3_ROM and DELUXE_ROM (default build/). Outputs go to build/deluxe_diff (or DIFF_OUT):
   ranges.tsv      changed ranges of the first 4 MB with classes and hex context
   upper_map.tsv   non-00/non-FF runs in the upper 4 MB of Deluxe
   long_refs.tsv   24-bit pointers / JSL / JML in changed ranges that hit upper runs
@@ -10,16 +10,16 @@ Outputs go to the scratchpad agents/deluxe_diff directory:
 """
 import sys, math, collections, re, os
 
-sys.path.insert(0, '/home/user/Bat-Kombat/tools')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from umk3rom import load, file_to_snes
 from capstone import (Cs, CS_ARCH_MOS65XX, CS_MODE_MOS65XX_65816,
                       CS_MODE_MOS65XX_65816_LONG_M, CS_MODE_MOS65XX_65816_LONG_X,
                       CS_MODE_MOS65XX_65816_LONG_MX)
 
-SCR = '/tmp/claude-0/-home-user-Bat-Kombat/afe52c5f-a404-552a-b206-05bca1c438dc/scratchpad'
-ORIG = f'{SCR}/roms/umk3/Ultimate Mortal Kombat 3 (USA).sfc'
-DELUXE = f'{SCR}/roms/deluxe/Ultimate Mortal Kombat 3 Deluxe (v2.3).sfc'
-OUT = f'{SCR}/agents/deluxe_diff'
+BUILD = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'build')
+ORIG = os.environ.get('UMK3_ROM', os.path.join(BUILD, 'Ultimate Mortal Kombat 3 (USA).sfc'))
+DELUXE = os.environ.get('DELUXE_ROM', os.path.join(BUILD, 'Ultimate Mortal Kombat 3 Deluxe (v2.3).sfc'))
+OUT = os.environ.get('DIFF_OUT', os.path.join(BUILD, 'deluxe_diff'))
 HALF = 0x400000
 MERGE_GAP = 64
 UPPER_GAP = 256

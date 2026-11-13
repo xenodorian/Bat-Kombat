@@ -6,6 +6,7 @@ Boots the game to Stage 1, dumps VRAM and work RAM, finds Batman's sprite palett
 These are the tile PIECES for the current pose. Frames are assembled from them using the
 sprite attribute table, which this script does not read yet.
 """
+import os
 import struct
 import sys
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
@@ -14,7 +15,7 @@ import br_gameplay as g
 from tilesheet import decode_4bpp_tile
 from PIL import Image
 
-CORE = "/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so"
+CORE = os.environ.get("SNES9X_CORE", "/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so")
 
 
 def main(rom, out):

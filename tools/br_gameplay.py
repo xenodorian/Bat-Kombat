@@ -1,7 +1,7 @@
 """Deterministic navigation of Batman Returns (SNES, USA) from boot into Stage 1 gameplay.
 
 Usage:
-    import sys; sys.path.insert(0, '/home/user/Bat-Kombat/tools')
+    import sys; sys.path.insert(0, 'tools')        # from the repo root
     import libretro_harness as h
     import br_gameplay as bg
     c = h.Core(bg.CORE)
@@ -28,9 +28,10 @@ if TOOLS_DIR not in sys.path:
     sys.path.insert(0, TOOLS_DIR)
 import libretro_harness as h  # noqa: E402
 
-ROM = ('/tmp/claude-0/-home-user-Bat-Kombat/afe52c5f-a404-552a-b206-05bca1c438dc/'
-       'scratchpad/roms/br/Batman Returns (USA).sfc')
-CORE = '/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so'
+REPO = os.path.dirname(TOOLS_DIR)
+# unzip "Batman Returns (USA).zip" -d build/   (or set BR_ROM)
+ROM = os.environ.get('BR_ROM', os.path.join(REPO, 'build', 'Batman Returns (USA).sfc'))
+CORE = os.environ.get('SNES9X_CORE', '/usr/lib/x86_64-linux-gnu/libretro/snes9x_libretro.so')
 
 # (frames, buttons) pairs run in order from power-on.
 # START at frame 1000 skips the intro crawl to the title screen.

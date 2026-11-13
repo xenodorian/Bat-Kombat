@@ -1,8 +1,11 @@
+"""Sprite-engine investigation (2026-10), kept as a record. Usage: python3 log_rom_tile_reads.py [UMK3_ROM]. Findings: Current_Work.md."""
 import sys, collections
-sys.path.insert(0,'/home/claude/bat-kombat/tools')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import dbg_core as d, umk3_nav as nav
-S=sys.argv[1]
-c=d.DbgCore(); c.load(S+'/roms_zip/Ultimate Mortal Kombat 3 (USA).sfc')
+ROM_PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'build', 'Ultimate Mortal Kombat 3 (USA).sfc')
+c=d.DbgCore(); c.load(ROM_PATH)
 nav.to_fight(c,0,0)
 c.run(2)
 c.reset_hooks()
@@ -15,7 +18,7 @@ print('reader PCs:', byPC.most_common(8))
 addrs=sorted(set(e['addr'] for e in log))
 if addrs: print('addr range:', hex(addrs[0]), hex(addrs[-1]), 'distinct:', len(addrs))
 import umk3rom as u
-rom=u.load(S+'/roms_zip/Ultimate Mortal Kombat 3 (USA).sfc')
+rom=u.load(ROM_PATH)
 w=bytes(c.wram())
 # the copy writes 16 words to 7E:80A8+x; compare the first staging block with ROM bytes at the first read address
 first=min(addrs)

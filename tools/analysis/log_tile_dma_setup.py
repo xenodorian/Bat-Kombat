@@ -1,8 +1,11 @@
+"""Sprite-engine investigation (2026-10), kept as a record. Usage: python3 log_tile_dma_setup.py [UMK3_ROM]. Findings: Current_Work.md."""
 import sys, collections
-sys.path.insert(0,'/home/claude/bat-kombat/tools')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import dbg_core as d, umk3_nav as nav, umk3rom as u
-S=sys.argv[1]
-ROM=S+'/roms_zip/Ultimate Mortal Kombat 3 (USA).sfc'
+ROM_PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'build', 'Ultimate Mortal Kombat 3 (USA).sfc')
+ROM=ROM_PATH
 rom=u.load(ROM)
 c=d.DbgCore(); c.load(ROM)
 nav.to_fight(c,0,0)
