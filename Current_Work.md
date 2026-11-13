@@ -1531,3 +1531,16 @@ correctly for standard SNES input; checking the core's input settings on the dev
 Not checked: real hardware, other cores than snes9x on this change, kombat kodes together with the move list,
 the 4- and 8-player tournament modes, matches past the second tower fight with the full test set, babality after
 a round in which Batman blocked (the condition was read, not tested), the stage fatality from a distance.
+
+## 2026-11-13: merge of the three agents' work, release rebuilt
+
+Merged: Novice tower AI (tools/novice_ai_patch.py), START pause with the move list (tools/batman_pause_patch.py),
+controls and move list fixes (tools/batman_controls_patch.py, batman_moves_patch.py, tools/rig/move_check.py).
+- The move list gained a 14th line (stage fatality), which did not fit the pause screen (30 columns, 13 rows below
+  the title). batman_pause_patch.text_lines() now drops the space after commas in over-wide lines and puts short
+  neighbouring lines on one row (BLOCK and BATARANG share a row). Checked on screen: deliverables/batman_pause_move_list.png.
+- Checked on the merged build: move_check.py 0 failures in all 6 modes; START pause freezes (x 496 while paused
+  with Right held) and resumes (x 546 after); Novice idle CPU 0 attacks in 1 minute, Master 21; liveness seeds 1-5
+  report 300, seed 6 reports 267 (the match ends inside the idle window; the same pattern the agents traced to the
+  match-over screen, not a crash).
+- release/Bat_Kombat.sfc and release/UMK3_Batman.zip rebuilt from this source.

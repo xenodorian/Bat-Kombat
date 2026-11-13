@@ -74,15 +74,27 @@ COLS, ROWS = 32, 32
 TEXT_PAL, TITLE_PAL = 2, 3
 FIRST_ROW = 1
 MAX_COLS = 30
+MAX_LINES = (28 - FIRST_ROW) // 2           # 13 text rows of 16 pixels below FIRST_ROW
 SHADOWS = (0x1A18, 0x1A1A, 0x1A1C, 0x1A1E, 0x1A24)   # IRQ shadows of HDMAEN, COLDATA, CGADSUB, CGWSEL, TM
 PAUSE_TM = 0x04                                 # only BG3 (the list) on the main screen while paused
 
 
 def text_lines():
-    """The move list lines (move_list_patch.lines()), shortened to fit 30 fixed-width 8-pixel cells."""
+    """The move list lines (move_list_patch.lines()), fitted to 30 fixed-width 8-pixel cells and 14 rows of 16 pixels.
+
+    Over-wide lines are shortened (FORWARD -> FWD, then no space after commas). If there are more lines than fit
+    under the title, short neighbouring lines share a row (three spaces apart), shortest pair first.
+    """
     out = move_list_patch.lines()
     if max(len(t) for t in out) > MAX_COLS:
         out = [t.replace("FORWARD", "FWD") for t in out]
+    out = [t.replace(", ", ",") if len(t) > MAX_COLS else t for t in out]
+    while len(out) > MAX_LINES:
+        pairs = [(len(out[i]) + len(out[i + 1]), i) for i in range(1, len(out) - 1)
+                 if len(out[i]) + 3 + len(out[i + 1]) <= MAX_COLS]
+        assert pairs, "move list taller than the screen"
+        i = min(pairs)[1]
+        out[i:i + 2] = [out[i] + "   " + out[i + 1]]
     for t in out:
         assert len(t) <= MAX_COLS, t
     return out
