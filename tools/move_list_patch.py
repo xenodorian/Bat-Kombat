@@ -29,7 +29,10 @@ _SHORT = {"High Punch": "HIGH PUNCH", "Low Punch": "LOW PUNCH", "High Kick": "HI
 def lines():
     out = ["BATMAN MOVES"]
     for name, keys in batman_moves_patch.MOVE_LIST:
-        t = ("%s: %s" % (name, keys)).upper().replace(" + ", " AND ")
+        if keys:
+            t = ("%s: %s" % (name, keys)).upper().replace(" + ", " AND ")
+        else:
+            t = name.upper()
         if len(t) > 38:                              # longer lines run off the screen
             t = t.replace("FORWARD", "FWD")
         assert len(t) <= 38, t

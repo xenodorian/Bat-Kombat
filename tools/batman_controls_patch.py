@@ -11,7 +11,8 @@ Batman Returns (measured with tools/rig/br_actions.py): Y punch, B jump, A batar
 spin, X and SELECT nothing, Up and Down walk in depth.
 
 While a fight is on and the pad's fighter is Batman, the pad value is rewritten before the game sees it:
-  R -> L (block), B + Y -> R (the run button, which carries Cape Charge), B -> Up (jump).
+  R -> L (block), B + Y -> R (the run button, which carries Cape Charge).
+B is left as low punch. Jump stays Up on the D-pad, so a combo can still use low punch.
 A stays the low kick button, which carries the no-motion Batarang (see batman_moves_patch.py). Y stays high
 punch. X stays high kick, so the kick finishers keep a button. The D-pad is unchanged: UMK3 needs Down for
 crouching and the directions for special moves, and has no depth.
@@ -23,7 +24,7 @@ SITES = {0x00FDCE: (bytes.fromhex("af184280"), 0x804218, 0x7E52C8),     # pad 1
          0x00FDDC: (bytes.fromhex("af1a4280"), 0x80421A, 0x7E52CA)}     # pad 2
 FIGHTER = 24
 SCREEN_MODE = 0x7E3A7E
-B, Y, UP, L, R = 0x8000, 0x4000, 0x0800, 0x0020, 0x0010
+B, Y, L, R = 0x8000, 0x4000, 0x0020, 0x0010
 
 
 def long_op(op, addr):
@@ -49,10 +50,7 @@ def hook_code(base):
     a.b(0x48, 0x29, 0x00, 0xC0, 0xC9, 0x00, 0xC0); a.branch(0xD0, "notboth")   # pha / and #B|Y / cmp #B|Y
     a.b(0x68, 0x29, 0xFF, 0x3F, 0x09, R, 0x00, 0x6B)                     # pla / and #~(B|Y) / ora #R / rtl
     a.label("notboth")
-    a.b(0x68, 0x89, 0x00, 0x80); a.branch(0xF0, "done")                  # pla / bit #B / beq done
-    a.b(0x29, 0xFF, 0x7F, 0x09, 0x00, UP >> 8)                           # and #~B / ora #Up
-    a.label("done")
-    a.b(0x6B)                                                            # rtl
+    a.b(0x68, 0x6B)                                                      # pla / rtl (B stays low punch)
     a.label("out")
     a.b(0x68, 0x6B)                                                      # pla / rtl
     return a.done(), entries

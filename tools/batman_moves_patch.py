@@ -39,8 +39,9 @@ _CODE = {"U": 6, "D": 7, "L": 8, "R": 9}        # L = back, R = forward when fac
 _MIRROR = {"U": "U", "D": "D", "L": "R", "R": "L"}
 
 # name, button, kind, condition, handler, window, sequence (press order, facing right; L = back, R = forward)
-# Batman plays with Batman Returns controls (batman_controls_patch.py): Y = high punch, A = low kick, X = high
-# kick, B = jump, L or R = block, B + Y = the run button. A window of 0 means no motion: the button alone.
+# Batman plays with these fight buttons (batman_controls_patch.py): Y = high punch, B = low punch,
+# X = high kick, A = low kick, L or R = block, B + Y = the run button. Jump is Up. A window of 0 means
+# no motion: the button alone.
 MOVES = [
     ("Smoke Teleport",  HP, 1, 0xDCC9, 0xC883, 0x18, "DL"),    # Scorpion's teleport punch
     ("Grapple Gun",     HP, 0, 0xDD1A, 0xC9A2, 0x14, "LL"),    # Scorpion's spear
@@ -62,7 +63,7 @@ FATALITY_2_ROUTINE = 0x8471          # Ermac's first fatality: lift and slam unt
 # Not table driven, already present for fighter 24: Super Roundhouse (back + high kick), handled at $85:AF02.
 
 MOVE_LIST = [
-    ("Punch Y, Kick X, Jump", "B"),
+    ("Y punch, B low punch, X kick", ""),
     ("Block", "L or R"),
     ("Batarang", "A"),
     ("Cape Charge", "B + Y"),

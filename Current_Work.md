@@ -1218,6 +1218,18 @@ move list screen shows the new buttons; Batman Returns sounds still key on. Live
 Not checked: Batman as player 2 with the new buttons (same code, other pad), babality (needs its round
 conditions), stage fatality.
 
+## 2026-11-12: B stays low punch
+
+The B -> Up rewrite is removed. During a Batman fight the pad hook now only does R -> L and B + Y -> R.
+B is low punch again, and jump is Up, so a dial-a-kombo can press low punch without giving up Cape Charge.
+The move list line that said "Jump: B" now reads "Y punch, B low punch, X kick".
+
+Checked on the build, two-player fight, Batman vs Noob: holding B leaves Y at 108 (same as idle) and plays
+punch frames 99-101; holding Up drops Y by 95 and holds jump frame 73. B + Right stays on the ground.
+Walking in and pressing B deals 24 damage. B + Y still dashes (Cape Charge, +325 x). The built ROM has no
+`and #~B / ora #Up` bytes, and the move-list text is the new line.
+
+
 ## 2026-11-13: tools catalog for other agents (owner's request)
 
 - New `tools/README.md`: setup, recipes ("where is X in RAM", "what code sets it", timing, sounds, crash test),

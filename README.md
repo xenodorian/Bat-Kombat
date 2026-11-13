@@ -20,19 +20,20 @@ He takes Rain's slot (top-left cell of the fighter select grid).
 
 ## Controls and move list
 
-Batman uses the Batman Returns (SNES) buttons. The remap applies only to a pad whose fighter is Batman, and only
-during a fight (`tools/batman_controls_patch.py`); everyone else keeps UMK3's buttons.
+Batman uses Batman Returns buttons, except B stays low punch and jump stays Up. The remap applies only to a
+pad whose fighter is Batman, and only during a fight (`tools/batman_controls_patch.py`); everyone else keeps
+UMK3's buttons.
 
 | Button | Batman Returns | Batman in UMK3 |
 |---|---|---|
-| Y | punch | punch (UMK3 high punch) |
-| B | jump | jump (sent to the game as Up, so B + Left/Right jumps that way) |
+| Y | punch | high punch |
+| B | jump | low punch (not remapped; kombos need it) |
 | A | batarang | Batarang, no motion needed |
 | L or R | cape block | block |
 | B + Y | cape spin | Cape Charge |
-| X | nothing | kick (UMK3 high kick), kept so the kick finishers and Spin Kick have a button |
+| X | nothing | high kick, kept so the kick finishers and Spin Kick have a button |
 | SELECT | nothing | nothing |
-| D-pad | walk; Up/Down walk in depth | walk; Down crouches, Up jumps (UMK3 has no depth, and the specials need it) |
+| D-pad | walk; Up/Down walk in depth | walk; Down crouches, Up jumps |
 
 Directions are for Batman facing right; mirror them when he faces left.
 

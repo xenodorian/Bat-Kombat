@@ -77,7 +77,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12; ending/bio text is compressed, location partly found, not replaced |
 | G | Other emulators and real hardware | bsnes-mercury accuracy core checked 2026-11-12 (boot to specials, all fine); hardware and Mesen not checked |
 | H | Small face on the one-player tower ("Choose your destiny") | done 2026-11-12 (tools/tower_face_patch.py) |
-| I | Batman Returns controls for Batman | done 2026-11-13 (tools/batman_controls_patch.py; moves reassigned to Y and A) |
+| I | Batman Returns controls for Batman | done 2026-11-13; 2026-11-12 B -> Up removed so B stays low punch and jump stays Up |
 | J | Boxes fit the sprites; Batman Returns speed and timing | done 2026-11-13: full drawn bounds; walk, punch, Batarang, block, hit reaction (tools/batman_timing_patch.py) |
 
 ## Steps, in order
