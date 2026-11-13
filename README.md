@@ -3,7 +3,7 @@
 Batman, with his sprites from Batman Returns (SNES), is a playable fighter in Ultimate Mortal Kombat 3 (USA).
 He takes Rain's slot (top-left cell of the fighter select grid).
 
-**Play it:** `release/UMK3_Batman.zip` holds the patched ROM (8 MB, ExHiROM). Tested in snes9x only.
+**Play it:** `release/Bat Kombat.sfc` is the patched ROM (8 MB, ExHiROM, no zip). Tested in snes9x only.
 
 ![Batman actions](deliverables/batman_actions.png)
 
