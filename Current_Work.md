@@ -1182,3 +1182,38 @@ All five specials fire. Liveness seeds 1, 4, 6 alive.
 Not changed, and why: hit windows, recovery, hit stun, walk and jump timing (game logic, changing them changes
 balance), damage values (owner's choice). Batman Returns' own hitboxes and damage were not ported.
 Sound: unchanged since the sound step; which sounds play still follows UMK3's events.
+
+## 2026-11-13: boxes fit the sprites, Batman Returns speed, Batman Returns controls (owner's request)
+
+Owner: make boxes fit the ported sprites, recreate Batman Returns' speed and feel (balance does not matter), and
+control Batman with the Batman Returns buttons.
+
+Found with the debugger:
+- Object X position $7E:3DA8,x (copied to $45F0); X velocity $7E:3C38,x in 1/256 px, added at $88:8413.
+  Walk velocity comes from $88:96FB (forward) / $88:96DC (back): per-fighter tables at $88:9729 + 4k and
+  $88:9799 + 4k, each (pose delay, speed). Fighter 24 had (5, $340) and (5, $240).
+- Pads: $80:FDCE reads $4218 (pad 1), $80:FDDC reads $421A (pad 2). UMK3 buttons: Y HP, B LP, X HK, A LK, L block,
+  R run (checked by pressing each one). $7E:3A7E screen mode: 0 in a fight, 13 roster, 11 VS, 14 stage intro.
+- The move matcher's "no other attack button held" test ($82:D1D4, X = button offset) is called from the sequence
+  test, so a record with window 0 skipped it and fired on any button. The matcher copy now calls it itself.
+- Punch hold: frame 58 sleeps 3, then the counted loop at $86:8B7E (count in $32, one sleep per frame, hit test each
+  frame) runs 5 more. Batarang lunge: one sleep(31) on frame 213. Hit reaction: 49, 50, 49, 49 with sleep 4 each.
+
+What changed:
+- Boxes: every Batman frame's box is the full drawn pose, cape included (tools/build_batman.py).
+- Walk: (8, $1C0) both ways, 1.75 px per frame and 8 frames per pose, as in Batman Returns. Measured on the build:
+  1.745 px per frame, poses 8 frames each.
+- Timing hook rows (tools/batman_timing_patch.py), now for sleeps 1-63; a row with original sleep 1 caps the loop
+  count $32. Measured: punch 56 x1, 57 x2, 58 x4, 57 x1, 56 x3 (was 58 x8); Batarang 3, 2, 2, 5, 3, 5 (was
+  3, 2, 2, 34, 4, 5); hit reaction 6, 6, 13 = 25 (Batman Returns 24, was 17). Jump airtime 38 frames, left as is.
+- Controls (tools/batman_controls_patch.py, JSL at both pad reads, both bank copies): when the screen mode is 0 and
+  the pad's fighter is 24: R -> L, B + Y -> R (run button), B -> Up. Moves (tools/batman_moves_patch.py):
+  Batarang on A with no motion, Cape Charge on the run button with no motion, Smoke Teleport DB+Y, Grapple Gun
+  BB+Y, Explosive DF+Y, Fatality 2 FFD+Y. Finishers, babality and the stage fatality now come first in the table.
+- Space: the move table grew, so the sound hook moved from $FF:E141 to $FF:E180.
+
+Checked on the build: Y punch, B jump (B + Right forward flip), A Batarang (hits), X kick, L and R block, B + Y Cape
+Charge (hits), SELECT nothing; DB+Y, BB+Y, DF+Y all fire and hit; Fatality 1, Fatality 2 and Friendship run;
+move list screen shows the new buttons; Batman Returns sounds still key on. Liveness seeds 1-6 alive.
+Not checked: Batman as player 2 with the new buttons (same code, other pad), babality (needs its round
+conditions), stage fatality.

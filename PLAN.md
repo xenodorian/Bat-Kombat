@@ -38,7 +38,11 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | Batman sprite set, header | `$40:0000` (expanded ROM), swapped in for set 27 by the hook at `$FF:DC6E` |
 | Batman's copy of set 16 (vial) | expanded ROM, swapped in for set 16 by the same hook (`hook_code(swaps)`) |
 | Special-move pointer tables, per button | `$82:BAC9` HP, `$BB01` LP, `$BB39` BLOCK, `$BB71` HK, `$BBA9` LK, `$BA91` RUN |
-| Batman's move matcher copy and table | `$FF:E000`, reached from the stub at `$82:EA7C` |
+| Batman's move matcher copy and table | `$FF:E000-$E17F`, reached from the stub at `$82:EA7C` |
+| Sound hook | `$FF:E180` (after the move table) |
+| Pad reads (controls remap) | `$80:FDCE` pad 1, `$80:FDDC` pad 2, JSL to expanded ROM |
+| Walk tables | `$88:9729` forward, `$88:9799` back, 4 bytes per fighter: pose delay, speed (1/256 px) |
+| Screen mode | `$7E:3A7E`: 0 fight, 13 roster, 11 VS, 14 stage intro |
 | Fatality jump tables | `$82:802D` (first), `$82:8065` (second), index fighter id * 2 |
 | Move list text and code | `$FF:DD00`, hooks at `$85:E834` and `$85:E8E4` |
 | VS portrait tables | `$83:EEFA` gfx, `$EF2E` map, `$EF62` palette, `$EEC6` bank, `$EE92` count, `$EFE6` mirror |
@@ -50,7 +54,7 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | Round wins | `$7E:36E0` (P1), `$7E:38A4` (P2). Seen 0 -> 1 after one round win. Not yet used. |
 | Round number (candidates) | `$7E:3A90` or `$7E:3ACA`, both went 1 -> 2. Not yet told apart. |
 | Tower face hook and data | `$FF:E480` code, `$FF:E500-$EAFF` face tiles, hook at `$86:DD83` |
-| Free space left in bank `$FF` | `0x3FDCB7-0x3FDCFF`, after the move list (`about 0x3FDE80`) to `0x3FDFFF`, `0x3FE200` to `0x3FE3FF` (check), `0x3FE440-0x3FE47F`, `0x3FEB00-0x3FEFFF` |
+| Free space left in bank `$FF` | `0x3FDCB7-0x3FDCFF`, after the move list (`about 0x3FDE80`) to `0x3FDFFF`, `0x3FE290` to `0x3FE3FF` (check), `0x3FE440-0x3FE47F`, `0x3FEB00-0x3FEFFF` |
 | Free space in bank `$82` | `$82:FF0B-$FF70`, `$82:EA80-$EAD3` |
 
 ## Status
@@ -73,6 +77,8 @@ python3 -I tools/build_batman.py "build/Ultimate Mortal Kombat 3 (USA).sfc" buil
 | F | Friendship, ending text, attract-mode bio | friendship added 2026-11-12; ending/bio text is compressed, location partly found, not replaced |
 | G | Other emulators and real hardware | bsnes-mercury accuracy core checked 2026-11-12 (boot to specials, all fine); hardware and Mesen not checked |
 | H | Small face on the one-player tower ("Choose your destiny") | done 2026-11-12 (tools/tower_face_patch.py) |
+| I | Batman Returns controls for Batman | done 2026-11-13 (tools/batman_controls_patch.py; moves reassigned to Y and A) |
+| J | Boxes fit the sprites; Batman Returns speed and timing | done 2026-11-13: full drawn bounds; walk, punch, Batarang, block, hit reaction (tools/batman_timing_patch.py) |
 
 ## Steps, in order
 

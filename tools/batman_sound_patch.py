@@ -46,7 +46,7 @@ SITE_BYTES = bytes.fromhex("c230a8f4807eab0ba900175b840aa98600850c")
 RESUME = 0x84FE75                         # "lda [$0A]" after the original setup
 SITE2 = 0x04EF8C                          # lda [$45],y / and #$00FF / sta $1B8A
 SITE2_BYTES = bytes.fromhex("b74529ff008d8a1b")
-HOOK_AREA = (0x3FE141, 0x3FE400)          # free space in the first 4 MB (bank $FF)
+HOOK_AREA = (0x3FE180, 0x3FE400)          # free space in the first 4 MB (bank $FF), after the move table
 OVR_AREA = (0x3FDF00, 0x3FE000)
 DATA_AREAS = [(0x3FEB00, 0x3FF000), (0x3FF890, 0x400000)]
 # code that reads the sound bank header: (file offset of the 3-byte operand, header offset)

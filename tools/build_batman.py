@@ -37,6 +37,7 @@ import umk3_sprites
 import vs_portrait
 import batman_sound_patch
 import batman_timing_patch
+import batman_controls_patch
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NINJA_SET = 27
@@ -282,14 +283,11 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
             poses[(i, flip)] = Pose(idx, store, (ax, ay))
         return poses[(i, flip)]
 
-    # frame records, and each frame's drawn box (lit colours only). See the box table below for how it is used
+    # frame records, and each frame's drawn box (all drawn pixels). See the box table below for how it is used
     records, boxes = {}, {}
 
-    lit = np.array([i for i, c in enumerate(palette) if i > 1 and max(c) > 70])
-
     def box_of(shown, ox, oy):
-        body = np.isin(shown, lit)
-        ys, xs = np.nonzero(body if body.sum() > 60 else shown)
+        ys, xs = np.nonzero(shown)
         c = lambda v: max(-128, min(127, int(v)))
         return (c(ox + xs.min()), c(ox + xs.max()), c(oy + ys.min()), c(oy + ys.max()))
     for f in range(1, nframes + 1):
@@ -372,16 +370,11 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
 
     # collision box table: 4 signed bytes per frame (left, right, top, bottom), read at $88:A6DB
     old_box = umk3_sprites.fo(ninja.header[8], ninja.header[14] | ninja.header[15] << 8)
-    # The engine's own rule is "box = drawn sprite bounds". Batman's cape is drawn in the same bright colours as
-    # his body and would widen the box far behind him, so for body frames: back edge and floor line stay UMK3's
-    # (Batman is aligned on the ninja's body), the front edge reaches Batman's drawn fist or foot, the top his head.
-    # Projectile frames (BATARANG) use their own drawn box.
+    # The engine's own rule is "box = drawn sprite bounds" (every UMK3 frame's box equals its drawn sprite), so
+    # every frame drawn with a Batman Returns pose gets the full bounds of that pose, cape included.
     box_tab = bytearray(rom4[old_box:old_box + 4 * nframes])
-    s8 = lambda v: v - 256 if v > 127 else v
     for f, b in boxes.items():
-        l0, r0, t0, b0 = (s8(v) for v in box_tab[4 * (f - 1):4 * f])
-        nb = b if f in BATARANG else (l0, max(r0, b[1]), b[2], b0)
-        box_tab[4 * (f - 1):4 * f] = bytes(v & 0xFF for v in nb)
+        box_tab[4 * (f - 1):4 * f] = bytes(v & 0xFF for v in b)
     xbank, xaddr = alloc.alloc(len(box_tab))
     put(xbank, xaddr, bytes(box_tab))
 
@@ -454,6 +447,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     # sounds: Batman Returns samples for the sounds Batman makes
     sound_info = batman_sound_patch.patch(rom, alloc, put)
     timing_info = batman_timing_patch.patch(rom, alloc, put)
+    controls_info = batman_controls_patch.patch(rom, alloc, put)
 
     # hook
     assert bytes(rom[HOOK_SITE:HOOK_SITE + len(HOOK_SITE_BYTES)]) == HOOK_SITE_BYTES, "unexpected bytes at hook site"
@@ -487,7 +481,7 @@ def build(rom4, frame_map, ninja_geom, poses_rgba, report=None):
     exhirom.fix_checksum(rom)
 
     if report is not None:
-        report.update(timing=timing_info, sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
+        report.update(timing=timing_info, controls=controls_info, sounds=sound_info, vs_portrait=vs_info, tiles=len(store.tiles), tilesets=n_sets, poses=len(poses),
                       mapped_frames=len(frame_map), header="%02X:%04X" % (cbank, h_addr),
                       last_bank="%02X" % alloc.bank, palette=palette,
                       lost={"%d%s" % (i, "f" if fl else ""): p.lost for (i, fl), p in poses.items() if p.lost},

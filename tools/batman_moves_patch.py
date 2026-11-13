@@ -31,26 +31,29 @@ BUTTON_TABLES = {0x30: 0xBAC9, 0x32: 0xBB01, 0x34: 0xBB39, 0x36: 0xBB71, 0x38: 0
 RAIN = 24
 OLD_LK, OLD_HP = 0xEA7C, 0xEA93      # Rain's original tables (1 and 3 records)
 STUB = OLD_LK                        # the new stub goes over the old tables
-CODE_AT, CODE_END = 0x3FE000, 0x3FE400   # $FF:E000, 0xFF padding in the original
+CODE_AT, CODE_END = 0x3FE000, 0x3FE180   # $FF:E000, 0xFF padding in the original (sound hook after)
 FATALITY_1, FATALITY_2 = 0x802D, 0x8065  # per-fighter jump tables in bank $82
 
 HP, LP, BLOCK, HK, LK, RUN = 0x30, 0x32, 0x34, 0x36, 0x38, 0x3A
 _CODE = {"U": 6, "D": 7, "L": 8, "R": 9}        # L = back, R = forward when facing right
 _MIRROR = {"U": "U", "D": "D", "L": "R", "R": "L"}
 
-# name, button, kind, condition, handler, window, sequence (press order, facing right; B = back, F = forward)
+# name, button, kind, condition, handler, window, sequence (press order, facing right; L = back, R = forward)
+# Batman plays with Batman Returns controls (batman_controls_patch.py): Y = high punch, A = low kick, X = high
+# kick, B = jump, L or R = block, B + Y = the run button. A window of 0 means no motion: the button alone.
 MOVES = [
-    ("Batarang",        HP, 0, 0x0000, 0xC99B, 0x18, "DR"),    # Reptile's spit handler, projectile redrawn
     ("Smoke Teleport",  HP, 1, 0xDCC9, 0xC883, 0x18, "DL"),    # Scorpion's teleport punch
-    ("Grapple Gun",     LP, 0, 0xDD1A, 0xC9A2, 0x14, "LL"),    # Scorpion's spear
-    ("Explosive",       LP, 0, 0x0000, 0xC9DA, 0x18, "DL"),    # Ermac's fireball
-    ("Cape Charge",     LK, 0, 0x0000, 0xC88A, 0x14, "LR"),    # Reptile's dash
+    ("Grapple Gun",     HP, 0, 0xDD1A, 0xC9A2, 0x14, "LL"),    # Scorpion's spear
+    ("Explosive",       HP, 0, 0x0000, 0xC9DA, 0x18, "DR"),    # Ermac's fireball
+    ("Cape Charge",     RUN, 0, 0x0000, 0xC88A, 0x00, ""),     # Reptile's dash, on B + Y like the cape spin
+    ("Batarang",        LK, 0, 0x0000, 0xC99B, 0x00, ""),      # Reptile's spit handler, projectile redrawn; A
 ]
 # Finishers. Kind 2 runs $82:8011 / $82:801F, which jump through the per-fighter tables patched below.
-# Condition $D4BF = standing close to the opponent.
+# Condition $D4BF = standing close to the opponent. Finishers come first in the table so that a move whose
+# sequence ends the same way (Grapple Gun, back back) cannot take the input first.
 FINISHERS = [
     ("Fatality 1", HK, 2, 0xD4BF, 0x8011, 0x30, "DDR"),
-    ("Fatality 2", LP, 2, 0xD4BF, 0x801F, 0x30, "RRD"),
+    ("Fatality 2", HP, 2, 0xD4BF, 0x801F, 0x30, "RRD"),
     ("Friendship", LK, 6, 0xD5B7, 0xF2D1, 0x30, "LRR"),
 ]
 FATALITY_1_ROUTINE = 0x842E          # Ermac's second fatality: uppercut that takes the head off
@@ -59,16 +62,18 @@ FATALITY_2_ROUTINE = 0x8471          # Ermac's first fatality: lift and slam unt
 # Not table driven, already present for fighter 24: Super Roundhouse (back + high kick), handled at $85:AF02.
 
 MOVE_LIST = [
-    ("Batarang", "Down, Forward, High Punch"),
-    ("Smoke Teleport", "Down, Back, High Punch"),
-    ("Grapple Gun", "Back, Back, Low Punch"),
-    ("Explosive", "Down, Back, Low Punch"),
-    ("Cape Charge", "Back, Forward, Low Kick"),
-    ("Spin Kick", "Back + High Kick"),
-    ("Fatality 1", "Down, Down, Forward, High Kick"),
-    ("Fatality 2", "Forward, Forward, Down, Low Punch"),
-    ("Babality", "Forward, Back, Back, High Punch"),
-    ("Friendship", "Back, Forward, Forward, Low Kick"),
+    ("Punch Y, Kick X, Jump", "B"),
+    ("Block", "L or R"),
+    ("Batarang", "A"),
+    ("Cape Charge", "B + Y"),
+    ("Smoke Teleport", "Down, Back, Y"),
+    ("Grapple Gun", "Back, Back, Y"),
+    ("Explosive", "Down, Forward, Y"),
+    ("Spin Kick", "Back + X"),
+    ("Fatality 1", "Down, Down, Forward, X"),
+    ("Fatality 2", "Forward, Forward, Down, Y"),
+    ("Babality", "Forward, Back, Back, Y"),
+    ("Friendship", "Back, Forward, Forward, A"),
 ]
 
 
@@ -100,6 +105,8 @@ def matcher(base, table_addr):
     a.jsl(0x82CFFD)                                                 # sequence test, entered after its bank setup
     a.branch(0x90, "next")
     a.label("skipseq")
+    a.jsl(0x82D1D4)                                                 # x = button: refuse if another attack button
+    a.branch(0xD0, "next")                                          # is held (the sequence test does this itself)
     a.b(0xA0, 0x04, 0x00, 0xB7, 0x42)                               # ldy #4 / lda [$42],y
     a.branch(0xF0, "run")
     a.b(0x8D, 0x00, 0x1A, 0xA9, 0x82, 0x00, 0x8D, 0x02, 0x1A)       # condition routine address at $1A00
@@ -125,7 +132,8 @@ def patch(rom):
     old_stage = bytes(rom[BANK + OLD_LK:BANK + OLD_LK + 21])             # stage fatality record, kept
     assert struct.unpack_from("<H", old_baby, 2)[0] == 7 and struct.unpack_from("<H", old_stage, 6)[0] == 0xC727
 
-    table = b"".join(record(*m[1:]) for m in MOVES + FINISHERS) + old_baby + old_stage + b"\0\0"
+    table = b"".join(record(*m[1:]) for m in FINISHERS) + old_baby + old_stage
+    table += b"".join(record(*m[1:]) for m in MOVES) + b"\0\0"
     base = 0xC00000 | CODE_AT
     code = matcher(base, 0)
     table_addr = (CODE_AT + len(code)) & 0xFFFF

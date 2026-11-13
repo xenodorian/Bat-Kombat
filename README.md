@@ -18,24 +18,37 @@ He takes Rain's slot (top-left cell of the fighter select grid).
 - Other fighters are untouched, including the other ninjas that share Rain's sprite set.
 - Stress test: 12,000 frames of random input in one-player and two-player modes without a hang.
 
-## Move list
+## Controls and move list
 
-Default SNES buttons: Y high punch, B low punch, X high kick, A low kick, L block, R run.
+Batman uses the Batman Returns (SNES) buttons. The remap applies only to a pad whose fighter is Batman, and only
+during a fight (`tools/batman_controls_patch.py`); everyone else keeps UMK3's buttons.
+
+| Button | Batman Returns | Batman in UMK3 |
+|---|---|---|
+| Y | punch | punch (UMK3 high punch) |
+| B | jump | jump (sent to the game as Up, so B + Left/Right jumps that way) |
+| A | batarang | Batarang, no motion needed |
+| L or R | cape block | block |
+| B + Y | cape spin | Cape Charge |
+| X | nothing | kick (UMK3 high kick), kept so the kick finishers and Spin Kick have a button |
+| SELECT | nothing | nothing |
+| D-pad | walk; Up/Down walk in depth | walk; Down crouches, Up jumps (UMK3 has no depth, and the specials need it) |
+
 Directions are for Batman facing right; mirror them when he faces left.
 
 | Move | Input | What it is in the engine |
 |---|---|---|
-| Batarang | Down, Forward, High Punch | Reptile's spit code, projectile redrawn as a batarang |
-| Smoke Teleport | Down, Back, High Punch (also in the air) | Scorpion's teleport punch |
-| Grapple Gun | Back, Back, Low Punch | Scorpion's spear, fired from the grapple gun pose |
-| Explosive | Down, Back, Low Punch | Ermac's fireball, redrawn as a spinning glass vial |
-| Cape Charge | Back, Forward, Low Kick | Reptile's dash |
-| Spin Kick | Back + High Kick | Rain's roundhouse (unchanged) |
-| Fatality 1 | Down, Down, Forward, High Kick (close) | Ermac's uppercut decapitation |
-| Fatality 2 | Forward, Forward, Down, Low Punch (close) | Ermac's lift and slam |
-| Babality | Forward, Back, Back, High Punch | Rain's (unchanged) |
-| Friendship | Back, Forward, Forward, Low Kick | generic friendship code; Batman stands still under the banner |
-| Stage fatality | Forward, Down, Forward, Low Kick | Rain's (unchanged) |
+| Batarang | A | Reptile's spit code, projectile redrawn as a batarang |
+| Cape Charge | B + Y | Reptile's dash |
+| Smoke Teleport | Down, Back, Y (also in the air) | Scorpion's teleport punch |
+| Grapple Gun | Back, Back, Y | Scorpion's spear, fired from the grapple gun pose |
+| Explosive | Down, Forward, Y | Ermac's fireball, redrawn as a spinning glass vial |
+| Spin Kick | Back + X | Rain's roundhouse (unchanged) |
+| Fatality 1 | Down, Down, Forward, X (close) | Ermac's uppercut decapitation |
+| Fatality 2 | Forward, Forward, Down, Y (close) | Ermac's lift and slam |
+| Babality | Forward, Back, Back, Y | Rain's (unchanged) |
+| Friendship | Back, Forward, Forward, A | generic friendship code; Batman stands still under the banner |
+| Stage fatality | Forward, Down, Forward, A | Rain's (unchanged) |
 
 ![Fatality 1](deliverables/batman_fatality_1.png)
 ![Fatality 2](deliverables/batman_fatality_2.png)
@@ -49,15 +62,19 @@ in the match (`tools/move_list_patch.py`):
 
 Rain's orb and lightning are removed. `tools/batman_moves_patch.py` documents the move table format.
 
-## Collision and timing
+## Collision, speed and timing
 
-- Batman has his own collision boxes: UMK3's rule (box = drawn sprite) for his reach and height, UMK3's back edge
-  and floor line so his cape does not widen the box. Punch, Batarang and block display steps use Batman Returns'
-  frame counts (`tools/batman_timing_patch.py`). Hit windows, recovery and damage are UMK3's.
+- Batman has his own collision boxes. UMK3's rule is box = drawn sprite, so each Batman frame's box is the full
+  drawn Batman Returns pose, cape included. Batman Returns' own collision data was not found.
+- Speed and timing follow Batman Returns, not UMK3 balance (`tools/batman_timing_patch.py`): walk 1.75 px per
+  frame both ways with 8 frames per pose (was 3.25 forward, 2.25 back, 5 per pose); punch held out 4 frames;
+  Batarang lunge 5 frames and recovery 4 (whole throw 34 frames shorter); block raise 4 frames; hit reaction
+  25 frames (Batman Returns 24, was 17). Jump airtime is 38 frames (Batman Returns about 40), left as is.
+  Damage is UMK3's.
 
 ## What is still borrowed
 
-- Normal moves, hit boxes, damage and sounds are Rain's. The specials above are other ninjas' code.
+- Normal moves and damage are Rain's. The specials above are other ninjas' code.
 - The rope, the explosive's blast and the hit effects use the original art. The batarang, grapple hook and vial are redrawn.
 - Poses are matched by hand for the common actions and by silhouette shape for rarer ones (other ninjas'
   special moves, fatality frames). Some of those reuse the guard pose.
